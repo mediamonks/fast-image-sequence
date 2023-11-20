@@ -133,10 +133,9 @@ export default class FastImageSequence {
     }
 
     /**
-     * @public
-     * @function tick
-     * @description Register a ready function to be called when the renderer instance is ready.
-     * @param {(dt: number) => void} func - The function to call.
+     * Register a tick function to be called on every frame update.
+     *
+     * @param tick - The function to be called.
      */
     public tick(func: (dt: number) => void) {
         this.tickFuncs.push(func);
