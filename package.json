@@ -29,7 +29,7 @@
     "prepare-publish": "ts-node-esm ./scripts/preparePublish.ts"
   },
   "devDependencies": {
-    "@types/shelljs": "^0.8.14",
+    "@types/shelljs": "^0.8.15",
     "shelljs": "^0.8.5",
     "shx": "^0.3.4",
     "ts-node": "^10.9.1",
