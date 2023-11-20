@@ -1,0 +1,66 @@
+name: Bump version, Tag & Publish
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Semver type of new version'
+        required: true
+        type: choice
+        options:
+          - major
+          - minor
+          - patch
+          - prerelease
+      prereleaseId:
+        description: 'Prerelease id'
+        required: false
+        type: choice
+        options:
+          - alpha
+          - beta
+          - rc
+
+jobs:
+  bump-version:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install npm packages
+        run: npm ci
+
+      - name: Setup Git
+        run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+
+      - name: Bump Version
+        run: |
+          npm version ${{ github.event.inputs.version }} --no-git-tag-version --preid ${{ github.event.inputs.prereleaseId }}
+          git add .
+          git commit -m "v$(npm pkg get version | tr -d '"')" --no-verify
+          git tag $(npm pkg get version | tr -d '"') -m "v$(npm pkg get version | tr -d '"')"
+
+      - name: Build & Publish
+        run: npm run build
+
+      - name: Publish to NPM
+        run: |
+          npm run prepare-publish
+          cd ./dist
+          npm config set //registry.npmjs.org/:_authToken ${NPM_TOKEN}
+          npm publish
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Push latest version
+        run: git push origin main --follow-tags

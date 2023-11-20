@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>FastImageSequence Example</title>
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            width: 100vw;
+            display: flex;
+            flex-wrap: wrap;
+            overflow: hidden;
+        }
+
+        .container {
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            width: 100vw;
+            line-height: 0;
+            position: relative;
+        }
+
+        .control {
+            position: absolute;
+            bottom: 3vh;
+            left: 10vw;
+            width: 80vw;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background-color: rgba(0, 0, 0, 0.5); /* semi-transparent black */
+        }
+
+        .control-button {
+            background-color: #fff;
+            border: none;
+            padding: 10px;
+            cursor: pointer;
+        }
+
+        .control-slider {
+            flex-grow: 1;
+            margin: 0 20px;
+            cursor: pointer;
+        }
+
+        .loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            border: 16px solid #f3f3f3;
+            border-top: 16px solid #3498db;
+            border-radius: 50%;
+            width: 120px;
+            height: 120px;
+            animation: spin 2s linear infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="loading"></div>
+</div>
+
+<div class="control">
+    <button class="control-button" id="prev-button"><</button>
+    <input type="range" min="0" max="1" value="0" step="0.0001" class="control-slider" id="slider-input">
+    <button class="control-button" id="next-button">></button>
+</div>
+<script src="bundle.js"></script>
+</body>
+</html>

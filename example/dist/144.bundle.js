@@ -1,0 +1,1 @@
+(()=>{"use strict";let a;self.onmessage=async e=>{"init"===e.data.cmd?a=e.data.buffer:"load"===e.data.cmd&&async function(e,t,s){const n=new Uint8Array(a,e,t),d=new Blob([n],{}),i=await createImageBitmap(d);postMessage({msg:"done",imageBitmap:i,index:s},[i])}(e.data.offset,e.data.size,e.data.index)}})();

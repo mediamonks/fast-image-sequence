@@ -1,0 +1,1 @@
+(()=>{"use strict";self.onmessage=async a=>{"load"===a.data.cmd&&await async function(a,t){const e=await fetch(a);if(!e.ok)throw"network error";const s=await createImageBitmap(await e.blob());postMessage({msg:"done",imageBitmap:s,index:t},[s])}(a.data.url,a.data.index)}})();
