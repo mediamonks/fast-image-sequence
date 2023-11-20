@@ -26,7 +26,7 @@ const options = {
     imageURLCallback: (index) => `path/to/your/image/sequence/image${index}.jpg`,
     
     tarURL: 'path/to/your/tar/file.tar',
-    tarImageURLCallback: (index) => `path/to/your/tar/image/sequence/image${index}.jpg`,
+    tarImageURLCallback: (index) => `image${index}.jpg`,
 };
 
 const sequence = new FastImageSequence(containerElement, options);
