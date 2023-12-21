@@ -9,9 +9,7 @@
   "repository": "git@github.com:mediamonks/fast-image-sequence.git",
   "author": "Reinder Nijhoff <reinder@mediamonks.com>",
   "license": "MIT",
-  "exports": {
-    "import": "./dist/index.js"
-  },
+  "exports": "./dist/index.js",
   "type": "module",
   "files": [
     "dist/**/*",
@@ -24,15 +22,15 @@
     "dev": "npm run build:ts -- --watch",
     "build": "npm run clean && npm run build:ts",
     "build:ts": "tsc -p ./tsconfig.build.json",
-    "clean": "shx rm -rf dist",
+    "clean": "shx rm -rf dist node_modules/.cache/.tsbuildinfo",
     "typecheck": "tsc --project tsconfig.json --noEmit --noUnusedLocals",
-    "prepare-publish": "ts-node-esm ./scripts/preparePublish.ts"
+    "prepare-publish": "tsx ./scripts/preparePublish.ts"
   },
   "devDependencies": {
     "@types/shelljs": "^0.8.14",
     "shelljs": "^0.8.5",
     "shx": "^0.3.4",
-    "ts-node": "^10.9.1",
+    "tsx": "^4.6.2",
     "typescript": "^5.0.4"
   },
   "engines": {
