@@ -16,7 +16,7 @@
     "vite": "^5.1.6"
   },
   "dependencies": {
-    "@mediamonks/fast-image-sequence": "0.0.1-dev.26e2865",
+    "@mediamonks/fast-image-sequence": "^0.0.2",
     "stats.js": "^0.17.0"
   }
 }
