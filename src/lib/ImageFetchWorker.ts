@@ -1,4 +1,4 @@
-import imageWorkerURL from './ImageFetchWorker.worker.js?worker&url';
+import imageWorkerSource from './ImageFetchWorker.worker.js?raw';
 
 export class ImageFetchWorker {
     public index: number = -1e10;
@@ -7,7 +7,8 @@ export class ImageFetchWorker {
     private resolve: ((bm: ImageBitmap) => void) | undefined;
 
     constructor() {
-        const worker = new Worker(imageWorkerURL);
+        const workerBlob = new Blob([imageWorkerSource], {type: 'application/javascript'});
+        const worker = new Worker(URL.createObjectURL(workerBlob));
 
         worker.addEventListener('message', (e) => {
             if (this.resolve && e.data.index === this.index) {

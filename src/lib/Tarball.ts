@@ -1,4 +1,4 @@
-import tarballWorker from './Tarball.worker.js?worker&url';
+import tarballWorkerSource from './Tarball.worker.js?raw';
 
 type TarballOptions = {
     useWorker: boolean;
@@ -117,7 +117,8 @@ export default class Tarball {
     // worker functionality
 
     private createWorker() {
-        const worker = new Worker(tarballWorker);
+        const tarballWorkerBlob = new Blob([tarballWorkerSource], {type: 'application/javascript'});
+        const worker = new Worker(URL.createObjectURL(tarballWorkerBlob));
 
         worker.addEventListener('message', (e) => {
             const fn = this.resolve[e.data.index];
