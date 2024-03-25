@@ -1,3 +1,5 @@
+import imageWorkerURL from './ImageFetchWorker.worker.js?worker&url';
+
 export class ImageFetchWorker {
     public index: number = -1e10;
 
@@ -5,7 +7,7 @@ export class ImageFetchWorker {
     private resolve: ((bm: ImageBitmap) => void) | undefined;
 
     constructor() {
-        const worker = new Worker(new URL("./ImageFetchWorker.worker.js", import.meta.url));
+        const worker = new Worker(imageWorkerURL);
 
         worker.addEventListener('message', (e) => {
             if (this.resolve && e.data.index === this.index) {

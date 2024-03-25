@@ -9,8 +9,15 @@
   "repository": "git@github.com:mediamonks/fast-image-sequence.git",
   "author": "Reinder Nijhoff <reinder@mediamonks.com>",
   "license": "MIT",
-  "exports": "./dist/index.js",
   "type": "module",
+  "main": "./dist/fast-image-sequence.umd.cjs",
+  "module": "./dist/fast-image-sequence.js",
+  "exports": {
+    ".": {
+      "import": "./dist/fast-image-sequence.js",
+      "require": "./dist/fast-image-sequence.umd.cjs"
+    }
+  },
   "files": [
     "dist/**/*",
     "README.md"
@@ -19,9 +26,9 @@
     "access": "public"
   },
   "scripts": {
-    "dev": "npm run build:ts -- --watch",
+    "dev": "vite",
     "build": "npm run clean && npm run build:ts",
-    "build:ts": "tsc -p ./tsconfig.build.json",
+    "build:ts": "vite build",
     "clean": "shx rm -rf dist node_modules/.cache/.tsbuildinfo",
     "typecheck": "tsc --project tsconfig.json --noEmit --noUnusedLocals",
     "prepare-publish": "tsx ./scripts/preparePublish.ts"
@@ -31,9 +38,13 @@
     "shelljs": "^0.8.5",
     "shx": "^0.3.4",
     "tsx": "^4.6.2",
-    "typescript": "^5.0.4"
+    "typescript": "^5.0.4",
+    "vite": "^5.1.6"
   },
   "engines": {
     "node": ">=16.0.0"
+  },
+  "dependencies": {
+    "vite-plugin-dts": "^3.7.3"
   }
 }
