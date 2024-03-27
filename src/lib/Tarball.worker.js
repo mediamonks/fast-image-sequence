@@ -1,4 +1,4 @@
-let buffer: Uint8Array;
+let buffer;
 
 self.onmessage = async (e) => {
     if (e.data.cmd === 'init') {

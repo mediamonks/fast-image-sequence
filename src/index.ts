@@ -1,2 +1,2 @@
-export { default as FastImageSequence } from './lib/FastImageSequence.js';
+export {default as FastImageSequence} from './lib/FastImageSequence.js';
 

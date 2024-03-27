@@ -1,4 +1,5 @@
-import {FastImageSequence} from '@mediamonks/fast-image-sequence';
+// import {FastImageSequence} from '@mediamonks/fast-image-sequence';
+import {FastImageSequence} from '../../src/index';
 
 const container = document.getElementsByClassName('container')[0];
 const prevButton = document.getElementById('prev-button');
@@ -7,13 +8,19 @@ const progress = document.getElementById('slider-input');
 
 async function init() {
     const fastImageSequence = new FastImageSequence(container, {
-        frames: 425,
-        wrap: false,
-        imageURLCallback: (i) => `./public/getty_persepolis_WebGL_intro_comp_v010.1${('' + (i + 1)).padStart(3, '0')}.avif`,
-        // tarURL: './public/highres.tar',
-        tarURL: './public/lowres.tar',
-        tarImageURLCallback: (i) => `getty_persepolis_WebGL_intro_comp_v010.1${('' + (i + 1)).padStart(3, '0')}.avif`,
-        // preloadAllTarImages: false,
+        frames: 89,
+        imageURLCallback: (i) => `./public/${('' + (i+1)).padStart(4, '0')}.webp`,
+        tarURL: '/lowrespreviews.tar',
+        tarImageURLCallback: (i) => `${('' + (i+1)).padStart(4, '0')}.jpg`,
+
+        // optional arguments:
+        wrap: true, // default false
+        size: 'contain', // default 'cover'
+        fillStyle: '#00000000', // default #00000000
+        preloadAllTarImages: false,
+        useWorkerForTar: true, // default true
+        numberOfCachedImages: 32, // default 32
+        clearCanvas: false, // default false
     });
 
     await fastImageSequence.ready;
