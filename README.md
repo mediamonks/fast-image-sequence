@@ -29,7 +29,9 @@ const options = {
     tarURL: 'path/to/your/tar/file.tar',
     tarImageURLCallback: (index) => `image${index}.jpg`,
 
-    // Note that you can also simultaneously use direct image loading and image loading from a tar file. In that case, you will use the tar file to server (super low res) preview images shown before the direct image loading completes.
+    // Note that you can also simultaneously use direct image loading and image loading from a tar file. 
+    // In that case, you will use the tar file to server (super low res) preview images shown before the
+    // direct image loading completes.
 
     wrap: true,
     size: 'cover',
