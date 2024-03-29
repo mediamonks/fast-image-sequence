@@ -21,32 +21,37 @@ import { FastImageSequence } from '@mediamonks/fast-image-sequence';
 
 const options = {
     frames: 100,
+
+    // You can directly load images from an image URL
     imageURLCallback: (index) => `path/to/your/image/sequence/image${index}.jpg`,
     
+    // Or you can load images from a tar file
     tarURL: 'path/to/your/tar/file.tar',
     tarImageURLCallback: (index) => `image${index}.jpg`,
 
-   wrap: true,
-   size: 'cover',
+    // Note that you can also simultaneously use direct image loading and image loading from a tar file. In that case, you will use the tar file to server (super low res) preview images shown before the direct image loading completes.
+
+    wrap: true,
+    size: 'cover',
 };
 
 const sequence = new FastImageSequence(containerElement, options);
 sequence.play();
 ```
 
-In the options object, you need to set either imageURLCallback or tarImageURLCallback. **Both are optional, but at least one must be set.** If you use tarImageURLCallback, you also have to load a tar file.
+In the options object, you need to set either imageURLCallback or tarImageURLCallback. **Both are optional, but at least one must be set.** If you use tarImageURLCallback, you must also load a tar file.
 
-Normally you will only add the tar with preview images for large images sequences. Note that you don't have to include all images in the tar. It will still work if you, for example, only include every 4th image of the sequence. This way you can reduce the size of the tar file significantly.
+Normally, you will only add the tar with preview images for large image sequences. Note that you don't have to include all images in the tar. It will still work if you, for example, only include every fourth image of the sequence. This way, you can significantly reduce the size of the tar file.
 
 The imageURLCallback and tarImageURLCallback are functions that take an index as a parameter and return a string representing the URL of the image at that index in the sequence. This allows you to dynamically generate the URLs of your images based on their index in the sequence.  
 
-The normal usage of this library involves having a tar file with low-resolution preview images. These will be used when you randomly seek or jump in the sequence or the internet speed is low. However, you are free to fine-tune as you will. For example, you can also use a tar with high-resolution images and don't set an imageURLCallback. This way, all images will served from the tar-file, which will reduce the number of requests and speed up the loading time.  
+The normal usage of this library involves having a tar file with low-resolution preview images. These will be used when you randomly seek or jump in the sequence or when the internet speed is low. However, you are free to fine-tune it as you please. For example, you can also use a tar file with high-resolution images and don't set an imageURLCallback. This way, all images will be served from the tar file, which will reduce the number of requests and speed up the loading time.  
 
 By setting callbacks for URLs and loading the tar file yourself, you can set different functions for different devices and/or different supported image file formats. This allows you to optimize the image sequence for your specific project needs.
 
 ## Methods
 
-The following methods are available for an FastImageSequence object:
+The following methods are available for a FastImageSequence object:
 
 ### tick(func: (dt: number) => void)
 
@@ -78,7 +83,7 @@ sequence.stop();
 
 ### isPlaying
 
-This is a getter method that returns a boolean indicating whether the image sequence is playing.
+This getter method returns a boolean indicating whether the image sequence is playing.
 
 ```typescript
 const playingStatus = sequence.isPlaying;
@@ -86,7 +91,7 @@ const playingStatus = sequence.isPlaying;
 
 ### isPaused
 
-This is a getter method that returns a boolean indicating whether the image sequence is paused.
+This getter method returns a boolean indicating whether the image sequence is paused.
 
 ```typescript
 const pausedStatus = sequence.isPaused;
@@ -94,7 +99,7 @@ const pausedStatus = sequence.isPaused;
 
 ### progress
 
-This is a getter and setter method that gets or sets the current progress (0-1) of the image sequence.
+This is a getter and setter method that gets or sets the image sequence's current progress (0-1).
 
 ```typescript
 // Get the progress
