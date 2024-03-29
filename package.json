@@ -39,12 +39,10 @@
     "shx": "^0.3.4",
     "tsx": "^4.6.2",
     "typescript": "^5.0.4",
-    "vite": "^5.1.6"
+    "vite": "^5.1.6",
+    "vite-plugin-dts": "^3.7.3"
   },
   "engines": {
     "node": ">=16.0.0"
-  },
-  "dependencies": {
-    "vite-plugin-dts": "^3.7.3"
   }
 }
