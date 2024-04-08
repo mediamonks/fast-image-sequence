@@ -2,6 +2,10 @@ import Tarball from "./Tarball.js";
 import Frame from "./Frame.js";
 import {ImageFetchWorker} from "./ImageFetchWorker.js";
 
+export function isMobile(): boolean {
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+}
+
 /**
  * @typedef {Object} FastImageSequenceOptions
  * @property {number} frames - The number of frames in the sequence.
@@ -13,6 +17,7 @@ import {ImageFetchWorker} from "./ImageFetchWorker.js";
  * @property {'contain' | 'cover'} [size='cover'] - How the image should be resized to fit the canvas.
  * @property {boolean} [preloadAllTarImages=false] - Whether all images from the tar file should be preloaded.
  * @property {boolean} [useWorkerForTar=true] - Whether to use a worker for handling the tar file.
+ * @property {boolean} [useWorkerForImage=!isMobile()] - Whether to use a worker for fetching images.
  * @property {number} [numberOfCachedImages=32] - The number of images to cache.
  * @property {boolean} [clearCanvas=false] - Whether to clear the canvas before drawing.
  */
@@ -27,34 +32,34 @@ export type FastImageSequenceOptions = {
   size: 'contain' | 'cover';
   preloadAllTarImages: boolean;
   useWorkerForTar: boolean;
+  useWorkerForImage: boolean;
   numberOfCachedImages: number,
   clearCanvas: boolean,
 }>
 
 export default class FastImageSequence {
+  private static defaultOptions: Required<FastImageSequenceOptions> = {
+    frames:               1,
+    imageURLCallback:     undefined,
+    tarURL:               undefined,
+    tarImageURLCallback:  undefined,
+    wrap:                 false,
+    fillStyle:            '#00000000',
+    size:                 'cover',
+    preloadAllTarImages:  false,
+    clearCanvas:          false, // clear canvas before drawing
+    useWorkerForTar:      true, // more latency, but less computation on main thread
+    useWorkerForImage:    !isMobile(), // less latency and memory usage, but more computation on main thread
+    numberOfCachedImages: 32,
+  };
   public canvas: HTMLCanvasElement;
   public options: Required<FastImageSequenceOptions>;
   public width: number = 0;
   public height: number = 0;
   public frame: number = 0;
   public ready: Promise<void>;
-
   public tarball: Tarball | undefined;
   private context: CanvasRenderingContext2D;
-
-  private static defaultOptions: Required<FastImageSequenceOptions> = {
-    frames: 1,
-    imageURLCallback: undefined,
-    tarURL: undefined,
-    tarImageURLCallback: undefined,
-    wrap: false,
-    fillStyle: '#00000000',
-    size: 'cover',
-    preloadAllTarImages: false,
-    clearCanvas: false, // clear canvas before drawing
-    useWorkerForTar: true, // more latency, but less computation on main thread
-    numberOfCachedImages: 32,
-  }
   private tickFuncs: ((dt: number) => void) [] = [];
 
   private frames: Frame[] = [];
@@ -108,6 +113,14 @@ export default class FastImageSequence {
     });
     this.resizeObserver.observe(container);
 
+    const mutationOberver = new MutationObserver(() => {
+      if (!this.container.isConnected) {
+        console.error('FastImageSequence: container is not connected to the DOM, fast image sequence will be destroyed');
+        this.destruct();
+      }
+    });
+    mutationOberver.observe(container, {childList: true});
+
     // init all frames
     for (let i = 0; i < this.options.frames; i++) {
       this.frames.push(new Frame(this, i));
@@ -130,30 +143,6 @@ export default class FastImageSequence {
       resolve();
     });
     this.drawingLoop(-1);
-  }
-
-  /**
-   * Register a tick function to be called on every frame update.
-   *
-   * @param tick - The function to be called.
-   */
-  public tick(func: (dt: number) => void) {
-    this.tickFuncs.push(func);
-  }
-
-  /**
-   * Start playing the image sequence at a specified frame rate.
-   * @param {number} [fps=30] - The frame rate to play the sequence at.
-   */
-  public play(fps: number = 30) {
-    this.speed = fps;
-  }
-
-  /**
-   * Stop playing the image sequence.
-   */
-  public stop() {
-    this.speed = 0;
   }
 
   public get isPlaying(): boolean {
@@ -180,6 +169,38 @@ export default class FastImageSequence {
     this.frame = (this.options.frames - 1) * value;
   }
 
+  private get index(): number {
+    return this.wrapIndex(this.frame);
+  }
+
+  private get spread(): number {
+    return this.options.wrap ? Math.floor(this.options.numberOfCachedImages / 2) : this.options.numberOfCachedImages;
+  }
+
+  /**
+   * Register a tick function to be called on every frame update.
+   *
+   * @param tick - The function to be called.
+   */
+  public tick(func: (dt: number) => void) {
+    this.tickFuncs.push(func);
+  }
+
+  /**
+   * Start playing the image sequence at a specified frame rate.
+   * @param {number} [fps=30] - The frame rate to play the sequence at.
+   */
+  public play(fps: number = 30) {
+    this.speed = fps;
+  }
+
+  /**
+   * Stop playing the image sequence.
+   */
+  public stop() {
+    this.speed = 0;
+  }
+
   /**
    * Get the image of a specific frame.
    * @param {number} index - The index of the frame.
@@ -202,8 +223,19 @@ export default class FastImageSequence {
     this.workerPool.push(worker);
   }
 
-  private get index(): number {
-    return this.wrapIndex(this.frame);
+  /**
+   * Destruct the FastImageSequence instance.
+   */
+  public destruct() {
+    cancelAnimationFrame(this.animationRequestId);
+
+    this.resizeObserver.disconnect();
+    this.container.removeChild(this.canvas);
+    this.canvas.replaceWith(this.canvas.cloneNode(true));
+    this.frames.forEach(frame => {
+      frame.releaseHighRes();
+      frame.releaseLowRes();
+    });
   }
 
   private wrapIndex(frame: number) {
@@ -354,31 +386,26 @@ export default class FastImageSequence {
 
       if (image.imageURL !== undefined) {
         image.loading = true;
-        const worker = this.getWorker();
-        worker.load(index, image.imageURL).then((imageBitmap) => {
-          image.releaseHighRes();
-          image.highRes = imageBitmap;
-          image.loading = false;
-          this.releaseWorker(worker);
-        });
+
+        if (this.options.useWorkerForImage) {
+          const worker = this.getWorker();
+          worker.load(index, image.imageURL).then((imageBitmap) => {
+            image.releaseHighRes();
+            image.highRes = imageBitmap;
+            image.loading = false;
+            this.releaseWorker(worker);
+          });
+        } else {
+          const imgElement = new Image();
+          image.loadImage(imgElement, image.imageURL).then(() => {
+            image.releaseHighRes();
+            image.highRes = imgElement;
+            image.loading = false;
+          });
+        }
       }
 
       numLoading++;
     }
-  }
-
-  private get spread(): number {
-    return this.options.wrap ? Math.floor(this.options.numberOfCachedImages / 2) : this.options.numberOfCachedImages;
-  }
-
-  /**
-   * Destruct the FastImageSequence instance.
-   */
-  public destruct() {
-    cancelAnimationFrame(this.animationRequestId);
-
-    this.resizeObserver.disconnect();
-    this.container.removeChild(this.canvas);
-    this.canvas.replaceWith(this.canvas.cloneNode(true));
   }
 }

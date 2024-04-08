@@ -2,7 +2,7 @@ import type FastImageSequence from "./FastImageSequence.js";
 
 export default class Frame {
   public index: number;
-  public highRes: ImageBitmap | undefined;
+  public highRes: ImageBitmap | HTMLImageElement | undefined;
   public priority: number = 0;
   public tarImageAvailable: boolean = false;
 
@@ -30,11 +30,13 @@ export default class Frame {
     });
   }
 
-  private loadImage(img: HTMLImageElement, src: string): Promise<HTMLImageElement> {
+  public loadImage(img: HTMLImageElement, src: string): Promise<HTMLImageElement> {
     return new Promise((resolve, reject) => {
-      img.onload = () => resolve(img);
       img.onerror = (e) => reject(e);
       img.src = src;
+      img.decode().then(() => {
+        resolve(img);
+      }).catch(() => reject());
     });
   }
 
@@ -69,7 +71,9 @@ export default class Frame {
 
   public releaseHighRes() {
     if (this.highRes) {
-      this.highRes.close();
+      if (this.highRes instanceof ImageBitmap) {
+        this.highRes.close();
+      }
       this.highRes = undefined;
     }
   }
