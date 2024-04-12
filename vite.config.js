@@ -6,7 +6,7 @@ export default defineConfig({
     target: 'esnext',
     plugins: [
         dts({
-            insertTypesEntry: true,
+            insertTypesEntry: false,
         }),
     ],
     build: {

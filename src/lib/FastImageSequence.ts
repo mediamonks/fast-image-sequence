@@ -23,10 +23,10 @@ export function isMobile(): boolean {
  */
 export type FastImageSequenceOptions = {
   frames: number,
+} & Partial<{
   tarURL: string | undefined,
   imageURLCallback: ((index: number) => string) | undefined,
   tarImageURLCallback: ((index: number) => string) | undefined,
-} & Partial<{
   wrap: boolean;
   fillStyle: string;
   size: 'contain' | 'cover';
@@ -37,7 +37,7 @@ export type FastImageSequenceOptions = {
   clearCanvas: boolean,
 }>
 
-export default class FastImageSequence {
+export class FastImageSequence {
   private static defaultOptions: Required<FastImageSequenceOptions> = {
     frames:               1,
     imageURLCallback:     undefined,
@@ -68,6 +68,7 @@ export default class FastImageSequence {
   private animationRequestId: number = 0;
   private container: HTMLElement;
   private resizeObserver: ResizeObserver;
+  private mutationOberver: MutationObserver;
   private clearCanvas: boolean = true;
 
   private maxLoading: number = 6;
@@ -78,6 +79,7 @@ export default class FastImageSequence {
   private prevFrame: number = 0;
   private direction: number = 1;
   private lastFrameDrawn: number = -1;
+  private destructed: boolean = false;
 
   /**
    * Creates an instance of FastImageSequence.
@@ -111,15 +113,15 @@ export default class FastImageSequence {
     this.resizeObserver = new ResizeObserver(() => {
       this.clearCanvas = true;
     });
-    this.resizeObserver.observe(container);
+    this.resizeObserver.observe(this.canvas);
 
-    const mutationOberver = new MutationObserver(() => {
+    this.mutationOberver = new MutationObserver(() => {
       if (!this.container.isConnected) {
         console.error('FastImageSequence: container is not connected to the DOM, fast image sequence will be destroyed');
         this.destruct();
       }
     });
-    mutationOberver.observe(container, {childList: true});
+    this.mutationOberver.observe(container, {childList: true});
 
     // init all frames
     for (let i = 0; i < this.options.frames; i++) {
@@ -227,9 +229,18 @@ export default class FastImageSequence {
    * Destruct the FastImageSequence instance.
    */
   public destruct() {
-    cancelAnimationFrame(this.animationRequestId);
+    if (this.destructed) {
+      return;
+    }
+    this.destructed = true;
+
+    if (this.animationRequestId) {
+      cancelAnimationFrame(this.animationRequestId);
+    }
 
     this.resizeObserver.disconnect();
+    this.mutationOberver.disconnect();
+
     this.container.removeChild(this.canvas);
     this.canvas.replaceWith(this.canvas.cloneNode(true));
     this.frames.forEach(frame => {
@@ -252,6 +263,10 @@ export default class FastImageSequence {
   }
 
   private async drawingLoop(time: number = 0) {
+    if (this.destructed) {
+      return;
+    }
+
     time /= 1000;
 
     const dt = this.startTime < 0 ? 1 / 60 : Math.min(time - this.startTime, 1 / 30);
@@ -301,7 +316,7 @@ export default class FastImageSequence {
 
     this.tickFuncs.forEach(func => func(dt));
 
-    this.animationRequestId = window.requestAnimationFrame(time => this.drawingLoop(time));
+    this.animationRequestId = requestAnimationFrame(time => this.drawingLoop(time));
   }
 
   private drawFrame(image: HTMLImageElement | ImageBitmap, index: number) {

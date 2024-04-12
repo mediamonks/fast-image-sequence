@@ -1,4 +1,4 @@
-import type FastImageSequence from "./FastImageSequence.js";
+import type {FastImageSequence} from "./FastImageSequence.js";
 
 export default class Frame {
   public index: number;
@@ -16,6 +16,30 @@ export default class Frame {
   constructor(context: FastImageSequence, index: number) {
     this.index = index;
     this.context = context;
+  }
+
+  public get lowRes(): HTMLImageElement | ImageBitmap | undefined {
+    if (this._lowRes !== undefined && !this.loadingLowRes) {
+      return this._lowRes;
+    } else {
+      return undefined;
+    }
+  }
+
+  get tarImageURL(): string | undefined {
+    if (this.context.options.tarImageURLCallback) {
+      return this.context.options.tarImageURLCallback(this.index);
+    } else {
+      return undefined;
+    }
+  }
+
+  public get imageURL(): string | undefined {
+    if (this.context.options.imageURLCallback) {
+      return new URL(this.context.options.imageURLCallback(this.index), window.location.href).href;
+    } else {
+      return undefined;
+    }
   }
 
   public async getImage(): Promise<HTMLImageElement | ImageBitmap> {
@@ -38,14 +62,6 @@ export default class Frame {
         resolve(img);
       }).catch(() => reject());
     });
-  }
-
-  public get lowRes(): HTMLImageElement | ImageBitmap | undefined {
-    if (this._lowRes !== undefined && !this.loadingLowRes) {
-      return this._lowRes;
-    } else {
-      return undefined;
-    }
   }
 
   public async fetchLowRes() {
@@ -85,22 +101,6 @@ export default class Frame {
       }
       this._lowRes = undefined;
       this.loadingLowRes = false;
-    }
-  }
-
-  get tarImageURL(): string | undefined {
-    if (this.context.options.tarImageURLCallback) {
-      return this.context.options.tarImageURLCallback(this.index);
-    } else {
-      return undefined;
-    }
-  }
-
-  public get imageURL(): string | undefined {
-    if (this.context.options.imageURLCallback) {
-      return new URL(this.context.options.imageURLCallback(this.index), window.location.href).href;
-    } else {
-      return undefined;
     }
   }
 }
