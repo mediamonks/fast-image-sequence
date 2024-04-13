@@ -303,12 +303,18 @@ export class FastImageSequence {
     //     }
     // }
 
-    const currentFrame = this.frames[index] as Frame;
-    currentFrame.getImage().then((image) => {
-      this.drawFrame(image, index);
-    }).catch(() => {
-    });
 
+    // check if canvas is in viewport
+    const rect = this.canvas.getBoundingClientRect();
+    const inViewport = rect.top < window.innerHeight && rect.bottom > 0;
+
+    if (inViewport) {
+      const currentFrame = this.frames[index] as Frame;
+      currentFrame.getImage().then((image) => {
+        this.drawFrame(image, index);
+      }).catch(() => {
+      });
+    }
 
     this.load(dt);
 
