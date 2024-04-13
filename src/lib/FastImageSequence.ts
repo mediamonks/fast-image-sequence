@@ -382,19 +382,11 @@ export class FastImageSequence {
     let numLoading = this.frames.filter(a => a.loading).length;
     const maxLoading = this.maxLoading;
 
-    // console.clear();
-    // console.log(`index: ${index}, priorityIndex: ${priorityIndex}, numLoading: ${numLoading}, maxLoading: ${maxLoading}, spread: ${this.spread}`);
-
-    this.frames.filter(a => a.highRes !== undefined && !a.loading && a.priority > this.spread).forEach(a => {
-      a.releaseHighRes();
-      if (!this.options.preloadAllTarImages) {
+    if (!this.options.preloadAllTarImages) {
+      this.frames.filter(a => a.lowRes !== undefined && !a.loading && a.priority > this.spread).forEach(a => {
         a.releaseLowRes();
-      }
-    });
-
-    // this.frames.filter(a => a.priority <= this.spread).forEach(a => {
-    //     a.fetchLowRes();
-    // });
+      });
+    }
 
     const imagesToLoad = this.frames.filter(a => a.highRes === undefined && !a.loading && a.priority <= this.spread).sort((a, b) => a.priority - b.priority);
 
@@ -402,31 +394,48 @@ export class FastImageSequence {
       const image = imagesToLoad.shift() as Frame;
       const index = image.index;
 
-      // image.fetchLowRes().catch(() => {
-      // });
-
       if (image.imageURL !== undefined) {
         image.loading = true;
 
         if (this.options.useWorkerForImage) {
           const worker = this.getWorker();
           worker.load(index, image.imageURL).then((imageBitmap) => {
+            this.releaseImageWithLowestPriority();
             image.releaseHighRes();
             image.highRes = imageBitmap;
             image.loading = false;
             this.releaseWorker(worker);
+          }).catch(e => {
+            image.reset();
+            console.error(e);
           });
         } else {
           const imgElement = new Image();
           image.loadImage(imgElement, image.imageURL).then(() => {
+            this.releaseImageWithLowestPriority();
             image.releaseHighRes();
             image.highRes = imgElement;
             image.loading = false;
+          }).catch(e => {
+            image.reset();
+            console.error(e);
           });
         }
       }
 
       numLoading++;
+    }
+  }
+
+  private releaseImageWithLowestPriority() {
+    // console.clear();
+    // console.log(`index: ${index}, priorityIndex: ${priorityIndex}, numLoading: ${numLoading}, maxLoading: ${maxLoading}, spread: ${this.spread}`);
+    const loadedHighResImages = this.frames.filter(a => a.highRes !== undefined && !a.loading);
+    if (loadedHighResImages.length > this.options.numberOfCachedImages) {
+      const sortedFrame = loadedHighResImages.sort((a, b) => a.priority - b.priority).pop();
+      if (sortedFrame) {
+        sortedFrame.releaseHighRes();
+      }
     }
   }
 }

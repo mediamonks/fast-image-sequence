@@ -16,7 +16,7 @@ function createFastImageSequence(container) {
     const fastImageSequence = new FastImageSequence(container, {
         frames: 89,
         imageURLCallback: (i) => `${('' + (i + 1)).padStart(4, '0')}.webp`,
-        tarURL: '/lowrespreviews.tar',
+        tarURL: (Math.random() > .5 ? '/lowrespreviews.tar' : undefined),
         tarImageURLCallback: (i) => `${('' + (i + 1)).padStart(4, '0')}.jpg`,
 
         // optional arguments:
@@ -25,12 +25,12 @@ function createFastImageSequence(container) {
         fillStyle: '#00000000', // default #00000000
         preloadAllTarImages: Math.random() > .5,
         useWorkerForTar: Math.random() > .5, // default true
-        numberOfCachedImages: 32, // default 32
+        numberOfCachedImages: (1+Math.random()*32)|0, // default 32
         clearCanvas: Math.random() > .5, // default false
     });
 
     fastImageSequence.ready.then(() => {
-        fastImageSequence.play(30);
+        fastImageSequence.tick(() => fastImageSequence.progress = Math.random());
     });
 
     return fastImageSequence;

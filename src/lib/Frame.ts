@@ -42,6 +42,13 @@ export default class Frame {
     }
   }
 
+  public reset() {
+    this.releaseHighRes();
+    this.releaseLowRes();
+    this.loading = false;
+    this.priority = 0;
+  }
+
   public async getImage(): Promise<HTMLImageElement | ImageBitmap> {
     return new Promise(async (resolve, reject) => {
       if (this.highRes !== undefined) {
@@ -60,7 +67,11 @@ export default class Frame {
       img.src = src;
       img.decode().then(() => {
         resolve(img);
-      }).catch(() => reject());
+      }).catch(e => {
+        console.error(e);
+        reject(e);
+        this.reset();
+      });
     });
   }
 
@@ -75,11 +86,13 @@ export default class Frame {
           this._lowRes = image;
           this.loadingLowRes = false;
           resolve(image);
-        }).catch(() => {
+        }).catch(e => {
           this.loadingLowRes = false;
-          reject();
+          this.reset();
+          reject(e);
         });
       } else {
+        this.reset();
         reject();
       }
     });
