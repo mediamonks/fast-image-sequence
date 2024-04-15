@@ -12,17 +12,18 @@
   "type": "module",
   "main": "./dist/fast-image-sequence.umd.cjs",
   "module": "./dist/fast-image-sequence.js",
+  "types": "./index.d.ts",
   "exports": {
     ".": {
       "import": "./dist/fast-image-sequence.js",
-      "require": "./dist/fast-image-sequence.umd.cjs"
+      "require": "./dist/fast-image-sequence.umd.cjs",
+      "types": "./index.d.ts"
     }
   },
   "files": [
     "dist/**/*",
     "README.md"
   ],
-  "types": "./index.d.ts",
   "publishConfig": {
     "access": "public"
   },
