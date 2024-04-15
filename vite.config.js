@@ -5,9 +5,7 @@ import dts from "vite-plugin-dts";
 export default defineConfig({
     target: 'esnext',
     plugins: [
-        dts({
-            insertTypesEntry: false,
-        }),
+        dts()
     ],
     build: {
         assetsInlineLimit: 409600,
