@@ -19,6 +19,7 @@ export async function initExampleWithControl(container) {
         useWorkerForTar: true, // default true
         numberOfCachedImages: 32, // default 32
         clearCanvas: false, // default false
+        showDebugInfo: true,
     });
 
     await fastImageSequence.ready;

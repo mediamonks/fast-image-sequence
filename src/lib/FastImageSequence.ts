@@ -1,5 +1,6 @@
 import Tarball from "./Tarball.js";
 import Frame from "./Frame.js";
+import {createLogElement, log} from "./Log.js";
 
 export function isMobile(): boolean {
   return (typeof navigator !== "undefined" && /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent));
@@ -34,6 +35,7 @@ export type FastImageSequenceOptions = {
   useWorkerForImage: boolean;
   numberOfCachedImages: number,
   clearCanvas: boolean,
+  showDebugInfo: boolean,
 }>
 
 export class FastImageSequence {
@@ -50,6 +52,7 @@ export class FastImageSequence {
     useWorkerForTar:      true, // more latency, but less computation on main thread
     useWorkerForImage:    !isMobile(), // less latency and memory usage, but more computation on main thread
     numberOfCachedImages: 32,
+    showDebugInfo:        false,
   };
   public canvas: HTMLCanvasElement;
   public options: Required<FastImageSequenceOptions>;
@@ -77,6 +80,7 @@ export class FastImageSequence {
   private direction: number = 1;
   private lastFrameDrawn: number = -1;
   private destructed: boolean = false;
+  private logElement: HTMLElement | undefined;
 
   /**
    * Creates an instance of FastImageSequence.
@@ -95,6 +99,9 @@ export class FastImageSequence {
     if (this.options.frames <= 0) {
       throw new Error('FastImageSequence: frames must be greater than 0');
     }
+    // make sure the number of cached images is odd
+    this.options.numberOfCachedImages = Math.floor(this.options.numberOfCachedImages / 2) * 2 + 1;
+    this.options.numberOfCachedImages = Math.max(1, Math.min(this.options.numberOfCachedImages, this.options.frames));
 
     this.container = container;
 
@@ -142,6 +149,12 @@ export class FastImageSequence {
       resolve();
     });
     this.drawingLoop(-1);
+
+    if (this.options.showDebugInfo) {
+      this.logElement = createLogElement();
+      this.container.appendChild(this.logElement);
+      this.tick(() => this.logDebugStatus(this.logElement as HTMLDivElement));
+    }
   }
 
   public get isPlaying(): boolean {
@@ -173,7 +186,7 @@ export class FastImageSequence {
   }
 
   private get spread(): number {
-    return this.options.wrap ? Math.floor(this.options.numberOfCachedImages / 2) : this.options.numberOfCachedImages;
+    return this.options.wrap ? Math.floor(this.options.numberOfCachedImages / 2 + 1) : this.options.numberOfCachedImages;
   }
 
   /**
@@ -227,6 +240,10 @@ export class FastImageSequence {
     this.mutationOberver.disconnect();
 
     this.container.removeChild(this.canvas);
+    if (this.logElement) {
+      this.container.removeChild(this.logElement);
+      this.logElement = undefined;
+    }
     this.canvas.replaceWith(this.canvas.cloneNode(true));
     this.frames.forEach(frame => {
       frame.releaseImage();
@@ -368,16 +385,16 @@ export class FastImageSequence {
     const maxLoading = this.maxLoading;
 
     if (!this.options.preloadAllTarImages) {
-      this.frames.filter(a => a.tarImage !== undefined && !a.loading && a.priority > this.spread).forEach(a => {
+      this.frames.filter(a => a.tarImage !== undefined && !a.loading && a.priority >= this.spread).forEach(a => {
         a.releaseTarImage();
       });
     }
 
-    const imagesToLoad = this.frames.filter(a => a.image === undefined && !a.loading && a.priority <= this.spread).sort((a, b) => a.priority - b.priority);
+    const imagesToLoad = this.frames.filter(a => a.image === undefined && !a.loading && a.priority < this.spread).sort((a, b) => a.priority - b.priority);
 
     while (numLoading < maxLoading && imagesToLoad.length > 0) {
       const image = imagesToLoad.shift() as Frame;
-
+      // console.log('load image for frame', image.index);
       image.fetchImage().then(() => {
         this.releaseImageWithLowestPriority();
       }).catch((e) => {
@@ -388,13 +405,45 @@ export class FastImageSequence {
     }
   }
 
+  private getLoadStatus() {
+    const used = this.options.imageURLCallback !== undefined;
+    const numLoading = this.frames.filter(a => a.loading).length;
+    const numLoaded = this.frames.filter(a => a.image !== undefined).length;
+    const maxLoaded = this.options.numberOfCachedImages;
+    const progress = (maxLoaded - numLoading) / maxLoaded;
+    return {used, progress, numLoading, numLoaded, maxLoaded};
+  }
+
+  private getTarStatus() {
+    const used = this.options.tarURL !== undefined;
+    const tarLoaded = this.tarball !== undefined;
+    const numLoading = this.frames.filter(a => a.loadingTarImage).length;
+    const numLoaded = this.frames.filter(a => a.tarImage !== undefined).length;
+    const maxLoaded = this.options.preloadAllTarImages ? this.frames.length : this.options.numberOfCachedImages;
+    const progress = numLoaded / maxLoaded;
+    return {used, tarLoaded, progress, numLoading, numLoaded, maxLoaded};
+  }
+
+  private logDebugStatus(output: HTMLDivElement) {
+    let debugInfo = `FastImageSequence - frames: ${this.frames.length}, maxCache: ${this.options.numberOfCachedImages}, wrap: ${this.options.wrap} \n`;
+    const formatPercentage = (n: number) => `${Math.abs(n * 100).toFixed(1).padStart(5, ' ')}%`;
+    {
+      const {used, progress, numLoading, numLoaded, maxLoaded} = this.getLoadStatus();
+      debugInfo += `- images: ${used ? `${formatPercentage(progress)}, numLoading: ${numLoading}, numLoaded: ${numLoaded}/${maxLoaded}` : 'not used'} \n`;
+    }
+    {
+      const {used, tarLoaded, progress, numLoading, numLoaded, maxLoaded} = this.getTarStatus();
+      debugInfo += `- tar:    ${used ? `${formatPercentage(progress)}, numLoading: ${numLoading}, numLoaded: ${numLoaded}/${maxLoaded}` : 'not used'}`;
+    }
+    log(output, debugInfo);
+  }
+
   private releaseImageWithLowestPriority() {
-    // console.clear();
-    // console.log(`index: ${index}, priorityIndex: ${priorityIndex}, numLoading: ${numLoading}, maxLoading: ${maxLoading}, spread: ${this.spread}`);
     const loadedHighResImages = this.frames.filter(a => a.image !== undefined && !a.loading);
     if (loadedHighResImages.length > this.options.numberOfCachedImages) {
       const sortedFrame = loadedHighResImages.sort((a, b) => a.priority - b.priority).pop();
       if (sortedFrame) {
+        // console.log('release image for frame', sortedFrame.index);
         sortedFrame.releaseImage();
       }
     }

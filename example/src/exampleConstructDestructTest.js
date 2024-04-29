@@ -27,6 +27,7 @@ function createFastImageSequence(container) {
         useWorkerForTar: Math.random() > .5, // default true
         numberOfCachedImages: (1+Math.random()*32)|0, // default 32
         clearCanvas: Math.random() > .5, // default false
+        showDebugInfo: true,
     });
 
     fastImageSequence.ready.then(() => {

@@ -8,10 +8,9 @@ export default class Frame {
   public priority: number = 0;
   public tarImageAvailable: boolean = false;
   public loading: boolean = false;
+  public loadingTarImage: boolean = false;
 
   private context: FastImageSequence;
-
-  private loadingTarImage: boolean = false;
   private _tarImage: HTMLImageElement | ImageBitmap | undefined;
 
   constructor(context: FastImageSequence, index: number) {
@@ -68,10 +67,14 @@ export default class Frame {
         this.loading = true;
 
         const loadingDone = (image: ImageBitmap | HTMLImageElement) => {
-          this.releaseImage();
-          this.image = image;
-          this.loading = false;
-          resolve(image);
+          if (this.loading) {
+            this.releaseImage();
+            this.image = image;
+            this.loading = false;
+            resolve(image);
+          } else {
+            reject();
+          }
         };
 
         const loadingError = (e: any) => {
@@ -105,9 +108,12 @@ export default class Frame {
         this.loadingTarImage = true;
         // @ts-ignore
         this.context.tarball.getImage(this.tarImageURL, this.index).then((image: HTMLImageElement | ImageBitmap) => {
-          this._tarImage = image;
-          this.loadingTarImage = false;
-          resolve(image);
+          if (this.loadingTarImage) {
+            this.releaseTarImage();
+            this._tarImage = image;
+            this.loadingTarImage = false;
+            resolve(image);
+          }
         }).catch(e => {
           this.loadingTarImage = false;
           this.reset();
@@ -127,6 +133,7 @@ export default class Frame {
       }
       this.image = undefined;
     }
+    this.loading = false;
   }
 
   public releaseTarImage() {
@@ -135,8 +142,8 @@ export default class Frame {
         this.tarImage.close();
       }
       this._tarImage = undefined;
-      this.loadingTarImage = false;
     }
+    this.loadingTarImage = false;
   }
 
   private loadImage(img: HTMLImageElement, src: string): Promise<HTMLImageElement> {
