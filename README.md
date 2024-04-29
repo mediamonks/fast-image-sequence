@@ -130,15 +130,15 @@ To create a tarball with preview images, you can follow these steps:
 
 1. Prepare your preview images: Make sure all your preview images are in a single directory. The images should be in a sequence and named consistently (for example, `image1.jpg`, `image2.jpg`, `image3.jpg`, etc.).
 
-2. Use a tar tool to create the tarball: if you are comfortable with the command line, you can use the `tar` command in Unix-based systems like this:
+2. Create a tarball file. If you prefer a graphical interface, use an online tool like [Tar File Creator](https://reindernijhoff.net/tools/tar/). Drag and drop your selection of images onto the page, and a tarball will be generated that you can download.
+ 
+3. Alternatively, use a tar tool to create the tarball: if you are comfortable with the command line, you can use the `tar` command in Unix-based systems like this:
 
     ```sh
-    tar -cvf preview_images.tar /path/to/your/preview_images
+    tar -cvf preview_images.tar -C /path/to/your/preview_images .
     ```
 
    This command will create a tarball named `preview_images.tar` from the directory `/path/to/your/preview_images`.
-
-3. Alternatively, if you prefer a graphical interface, use an online tool like [Tar File Creator](https://reindernijhoff.net/tools/tar/). Drag and drop your selection of images onto the page, generating a tarball you can download.
 
 Once you have your tarball, you can use it with `FastImageSequence` by setting the `tarURL` option to the URL of your tarball and implementing the `tarImageURLCallback` to return the URL of an image in the tarball given its index.
 
