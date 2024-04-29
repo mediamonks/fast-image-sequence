@@ -3,14 +3,13 @@ import {getImageFetchWorker, releaseImageFetchWorker} from "./ImageFetchWorker.j
 
 export default class Frame {
   public index: number;
-  public image: ImageBitmap | HTMLImageElement | undefined;
-
   public priority: number = 0;
   public tarImageAvailable: boolean = false;
   public loading: boolean = false;
   public loadingTarImage: boolean = false;
 
   private context: FastImageSequence;
+  private _image: ImageBitmap | HTMLImageElement | undefined;
   private _tarImage: HTMLImageElement | ImageBitmap | undefined;
 
   constructor(context: FastImageSequence, index: number) {
@@ -24,6 +23,24 @@ export default class Frame {
     } else {
       return undefined;
     }
+  }
+
+  public set tarImage(image: HTMLImageElement | ImageBitmap | undefined) {
+    this.releaseTarImage();
+    this._tarImage = image;
+  }
+
+  public get image(): ImageBitmap | HTMLImageElement | undefined {
+    if (this._image !== undefined && !this.loading) {
+      return this._image;
+    } else {
+      return undefined;
+    }
+  }
+
+  public set image(image: ImageBitmap | HTMLImageElement | undefined) {
+    this.releaseImage();
+    this._image = image;
   }
 
   get tarImageURL(): string | undefined {
@@ -43,16 +60,15 @@ export default class Frame {
   }
 
   public reset() {
-    this.releaseImage();
-    this.releaseTarImage();
-    this.loading = false;
+    this._image = undefined;
+    this._tarImage = undefined;
     this.priority = 0;
   }
 
   public async getImage(): Promise<HTMLImageElement | ImageBitmap> {
     return new Promise(async (resolve, reject) => {
-      if (this.image !== undefined) {
-        resolve(this.image);
+      if (this._image !== undefined) {
+        resolve(this._image);
       } else if (this.tarImage !== undefined) {
         resolve(this.tarImage);
       } else {
@@ -68,12 +84,8 @@ export default class Frame {
 
         const loadingDone = (image: ImageBitmap | HTMLImageElement) => {
           if (this.loading) {
-            this.releaseImage();
             this.image = image;
-            this.loading = false;
             resolve(image);
-          } else {
-            reject();
           }
         };
 
@@ -109,9 +121,7 @@ export default class Frame {
         // @ts-ignore
         this.context.tarball.getImage(this.tarImageURL, this.index).then((image: HTMLImageElement | ImageBitmap) => {
           if (this.loadingTarImage) {
-            this.releaseTarImage();
-            this._tarImage = image;
-            this.loadingTarImage = false;
+            this.tarImage = image;
             resolve(image);
           }
         }).catch(e => {
@@ -127,11 +137,11 @@ export default class Frame {
   }
 
   public releaseImage() {
-    if (this.image) {
-      if (this.image instanceof ImageBitmap) {
-        this.image.close();
+    if (this._image) {
+      if (this._image instanceof ImageBitmap) {
+        this._image.close();
       }
-      this.image = undefined;
+      this._image = undefined;
     }
     this.loading = false;
   }
@@ -149,6 +159,7 @@ export default class Frame {
   private loadImage(img: HTMLImageElement, src: string): Promise<HTMLImageElement> {
     return new Promise((resolve, reject) => {
       img.onerror = (e) => reject(e);
+      img.decoding = "async";
       img.src = src;
       img.decode().then(() => {
         resolve(img);

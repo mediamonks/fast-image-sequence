@@ -280,31 +280,7 @@ export class FastImageSequence {
     this.frame += this.speed * dt;
     this.frame = this.wrapFrame(this.frame);
 
-    let index = this.index;
-
-    // try to draw the bested cached image for this frame
-    // let frameFound = false;
-    // for (let i = 0; i < this.speed; i++) {
-    //     const lookupIndex = this.wrapIndex(this.frame + this.direction * i);
-    //     const frame = this.frames[lookupIndex] as Frame;
-    //     if (frame.highRes !== undefined) {
-    //         this.drawFrame(frame.highRes, lookupIndex);
-    //         frameFound = true;
-    //         break;
-    //     }
-    // }
-    // if (!frameFound) {
-    //     for (let i = 0; i < this.speed; i++) {
-    //         const lookupIndex = this.wrapIndex(this.frame + this.direction * i);
-    //         const frame = this.frames[lookupIndex] as Frame;
-    //         if (frame.lowRes !== undefined) {
-    //             this.drawFrame(frame.lowRes, lookupIndex);
-    //             frameFound = true;
-    //             break;
-    //         }
-    //     }
-    // }
-
+    const index = this.index;
 
     // check if canvas is in viewport
     const rect = this.canvas.getBoundingClientRect();
@@ -313,25 +289,55 @@ export class FastImageSequence {
     if (inViewport) {
       const currentFrame = this.frames[index] as Frame;
       currentFrame.getImage().then((image) => {
-        this.drawFrame(image, index);
+        // this.drawFrame(currentFrame);
       }).catch(() => {
       });
+
+      // find the best matching loaded frame, based on current index and direction
+      // first set some sort of priority
+      this.frames.forEach((frame) => {
+        frame.priority = Math.abs(frame.index - index);
+        let direction = Math.sign(this.frame - this.prevFrame);
+        if (this.options.wrap) {
+          const wrappedPriority = this.options.frames - frame.priority;
+          if (wrappedPriority < frame.priority) {
+            frame.priority = wrappedPriority;
+            // direction *= -1;
+          }
+        }
+        // frame.priority += this.direction * direction === -1 ? this.frames.length : 0;
+      });
+      this.frames.sort((a, b) => b.priority - a.priority);
+      //
+      // best loaded image
+      const bestImageMatch = this.frames.filter(a => a.image !== undefined).pop();
+      if (bestImageMatch && bestImageMatch.image) {
+        this.drawFrame(bestImageMatch);
+      }
+      // best loaded tar match
+      const bestTarMatch = this.frames.filter(a => a.tarImage !== undefined).pop();
+      if (bestTarMatch && bestTarMatch.tarImage) {
+        if (!(bestImageMatch && bestImageMatch.image && bestImageMatch.priority <= bestTarMatch.priority)) {
+          this.drawFrame(bestTarMatch);
+        }
+      }
     }
 
-    this.load(dt);
-
-    this.prevFrame = this.frame;
+    this.process(dt);
 
     this.tickFuncs.forEach(func => func(dt));
 
+    this.prevFrame = this.frame;
     this.animationRequestId = requestAnimationFrame(time => this.drawingLoop(time));
   }
 
-  private drawFrame(image: HTMLImageElement | ImageBitmap, index: number) {
-    if (Math.abs(this.lastFrameDrawn - this.index) < Math.abs(index - this.index)) {
+  private drawFrame(frame: Frame) {
+    const image = frame.image || frame.tarImage;
+    if (!image) {
       return;
     }
-    this.lastFrameDrawn = index;
+
+    this.lastFrameDrawn = frame.index;
 
     const containerAspect = this.container.offsetWidth / this.container.offsetHeight;
     const imageAspect = image.width / image.height;
@@ -370,10 +376,11 @@ export class FastImageSequence {
     this.context.drawImage(image, 0, 0, image.width, image.height, dx, dy, this.width, this.height);
   }
 
-  private load(dt: number) {
+  private process(dt: number) {
     const index = this.index;
     const priorityIndex = this.index;// this.wrapIndex(Math.min(this.spread / 2 - 2, (this.frame - this.prevFrame) * (dt * 60)) + this.frame);
 
+    // set priority for all images
     this.frames.forEach((image) => {
       image.priority = Math.abs(image.index - priorityIndex);
       if (this.options.wrap) {
@@ -381,20 +388,27 @@ export class FastImageSequence {
       }
     });
 
-    let numLoading = this.frames.filter(a => a.loading).length;
-    const maxLoading = this.maxLoading;
-
+    // release tar images if needed
     if (!this.options.preloadAllTarImages) {
-      this.frames.filter(a => a.tarImage !== undefined && !a.loading && a.priority >= this.spread).forEach(a => {
-        a.releaseTarImage();
-      });
+      let {numLoaded, numLoading} = this.getTarStatus();
+      if (numLoaded > this.options.numberOfCachedImages - numLoading) {
+        this.frames.filter(a => a.tarImage !== undefined && !a.loading && a.priority >= this.spread).forEach(a => {
+          if (numLoaded > this.options.numberOfCachedImages - numLoading) {
+            a.releaseTarImage();
+            numLoaded--;
+          }
+        });
+      }
     }
 
+    // prioritize loading images and start loading images
+    let numLoading = this.getLoadStatus().numLoading;
+    const maxLoading = this.maxLoading;
     const imagesToLoad = this.frames.filter(a => a.image === undefined && !a.loading && a.priority < this.spread).sort((a, b) => a.priority - b.priority);
 
     while (numLoading < maxLoading && imagesToLoad.length > 0) {
       const image = imagesToLoad.shift() as Frame;
-      // console.log('load image for frame', image.index);
+
       image.fetchImage().then(() => {
         this.releaseImageWithLowestPriority();
       }).catch((e) => {
@@ -425,7 +439,7 @@ export class FastImageSequence {
   }
 
   private logDebugStatus(output: HTMLDivElement) {
-    let debugInfo = `FastImageSequence - frames: ${this.frames.length}, maxCache: ${this.options.numberOfCachedImages}, wrap: ${this.options.wrap} \n`;
+    let debugInfo = `FastImageSequence - frames: ${this.frames.length}, maxCache: ${this.options.numberOfCachedImages}, wrap: ${this.options.wrap} \n- last frame drawn ${this.lastFrameDrawn}/${this.index}\n`;
     const formatPercentage = (n: number) => `${Math.abs(n * 100).toFixed(1).padStart(5, ' ')}%`;
     {
       const {used, progress, numLoading, numLoaded, maxLoaded} = this.getLoadStatus();
@@ -439,9 +453,9 @@ export class FastImageSequence {
   }
 
   private releaseImageWithLowestPriority() {
-    const loadedHighResImages = this.frames.filter(a => a.image !== undefined && !a.loading);
-    if (loadedHighResImages.length > this.options.numberOfCachedImages) {
-      const sortedFrame = loadedHighResImages.sort((a, b) => a.priority - b.priority).pop();
+    const loadedImages = this.frames.filter(a => a.image !== undefined && !a.loading);
+    if (loadedImages.length > this.options.numberOfCachedImages) {
+      const sortedFrame = loadedImages.sort((a, b) => a.priority - b.priority).pop();
       if (sortedFrame) {
         // console.log('release image for frame', sortedFrame.index);
         sortedFrame.releaseImage();

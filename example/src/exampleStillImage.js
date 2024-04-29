@@ -4,8 +4,8 @@ export async function initExampleStillImage(container) {
     const fastImageSequence = new FastImageSequence(container, {
         frames: 89,
         imageURLCallback: (i) => `${('' + (i + 1)).padStart(4, '0')}.webp`,
-        // tarURL: '/lowrespreviews.tar',
-        // tarImageURLCallback: (i) => `${('' + (i+1)).padStart(4, '0')}.jpg`,
+        tarURL: '/lowrespreviews.tar',
+        tarImageURLCallback: (i) => `${('' + (i+1)).padStart(4, '0')}.jpg`,
 
         // optional arguments:
         wrap: true, // default false
