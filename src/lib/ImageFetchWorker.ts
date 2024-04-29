@@ -34,3 +34,19 @@ export class ImageFetchWorker {
     this.resolve = undefined;
   }
 }
+
+// pool of workers
+
+const workerPool: ImageFetchWorker[] = [];
+
+export function getImageFetchWorker(): ImageFetchWorker {
+  if (workerPool.length === 0) {
+    workerPool.push(new ImageFetchWorker());
+  }
+  return workerPool.shift() as ImageFetchWorker;
+}
+
+export function releaseImageFetchWorker(worker: ImageFetchWorker) {
+  worker.abort();
+  workerPool.push(worker);
+}

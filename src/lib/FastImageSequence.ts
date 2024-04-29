@@ -1,6 +1,5 @@
 import Tarball from "./Tarball.js";
 import Frame from "./Frame.js";
-import {ImageFetchWorker} from "./ImageFetchWorker.js";
 
 export function isMobile(): boolean {
   return (typeof navigator !== "undefined" && /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent));
@@ -73,9 +72,7 @@ export class FastImageSequence {
 
   private maxLoading: number = 6;
 
-  private workerPool: ImageFetchWorker[] = [];
   private speed: number = 0;
-
   private prevFrame: number = 0;
   private direction: number = 1;
   private lastFrameDrawn: number = -1;
@@ -139,7 +136,7 @@ export class FastImageSequence {
         this.frames.forEach(frame => frame.tarImageAvailable = frame.tarImageURL !== undefined && this.tarball?.getInfo(frame.tarImageURL) !== undefined);
 
         if (this.options.preloadAllTarImages) {
-          await Promise.all(this.frames.map(frame => frame.fetchLowRes()));
+          await Promise.all(this.frames.map(frame => frame.fetchTarImage()));
         }
       }
       resolve();
@@ -213,18 +210,6 @@ export class FastImageSequence {
     return this.frames[this.wrapIndex(index)].getImage();
   }
 
-  public getWorker(): ImageFetchWorker {
-    if (this.workerPool.length === 0) {
-      this.workerPool.push(new ImageFetchWorker());
-    }
-    return this.workerPool.shift() as ImageFetchWorker;
-  }
-
-  public releaseWorker(worker: ImageFetchWorker) {
-    worker.abort();
-    this.workerPool.push(worker);
-  }
-
   /**
    * Destruct the FastImageSequence instance.
    */
@@ -244,8 +229,8 @@ export class FastImageSequence {
     this.container.removeChild(this.canvas);
     this.canvas.replaceWith(this.canvas.cloneNode(true));
     this.frames.forEach(frame => {
-      frame.releaseHighRes();
-      frame.releaseLowRes();
+      frame.releaseImage();
+      frame.releaseTarImage();
     });
   }
 
@@ -383,45 +368,21 @@ export class FastImageSequence {
     const maxLoading = this.maxLoading;
 
     if (!this.options.preloadAllTarImages) {
-      this.frames.filter(a => a.lowRes !== undefined && !a.loading && a.priority > this.spread).forEach(a => {
-        a.releaseLowRes();
+      this.frames.filter(a => a.tarImage !== undefined && !a.loading && a.priority > this.spread).forEach(a => {
+        a.releaseTarImage();
       });
     }
 
-    const imagesToLoad = this.frames.filter(a => a.highRes === undefined && !a.loading && a.priority <= this.spread).sort((a, b) => a.priority - b.priority);
+    const imagesToLoad = this.frames.filter(a => a.image === undefined && !a.loading && a.priority <= this.spread).sort((a, b) => a.priority - b.priority);
 
     while (numLoading < maxLoading && imagesToLoad.length > 0) {
       const image = imagesToLoad.shift() as Frame;
-      const index = image.index;
 
-      if (image.imageURL !== undefined) {
-        image.loading = true;
-
-        if (this.options.useWorkerForImage) {
-          const worker = this.getWorker();
-          worker.load(index, image.imageURL).then((imageBitmap) => {
-            this.releaseImageWithLowestPriority();
-            image.releaseHighRes();
-            image.highRes = imageBitmap;
-            image.loading = false;
-            this.releaseWorker(worker);
-          }).catch(e => {
-            image.reset();
-            console.error(e);
-          });
-        } else {
-          const imgElement = new Image();
-          image.loadImage(imgElement, image.imageURL).then(() => {
-            this.releaseImageWithLowestPriority();
-            image.releaseHighRes();
-            image.highRes = imgElement;
-            image.loading = false;
-          }).catch(e => {
-            image.reset();
-            console.error(e);
-          });
-        }
-      }
+      image.fetchImage().then(() => {
+        this.releaseImageWithLowestPriority();
+      }).catch((e) => {
+        console.error(e);
+      });
 
       numLoading++;
     }
@@ -430,11 +391,11 @@ export class FastImageSequence {
   private releaseImageWithLowestPriority() {
     // console.clear();
     // console.log(`index: ${index}, priorityIndex: ${priorityIndex}, numLoading: ${numLoading}, maxLoading: ${maxLoading}, spread: ${this.spread}`);
-    const loadedHighResImages = this.frames.filter(a => a.highRes !== undefined && !a.loading);
+    const loadedHighResImages = this.frames.filter(a => a.image !== undefined && !a.loading);
     if (loadedHighResImages.length > this.options.numberOfCachedImages) {
       const sortedFrame = loadedHighResImages.sort((a, b) => a.priority - b.priority).pop();
       if (sortedFrame) {
-        sortedFrame.releaseHighRes();
+        sortedFrame.releaseImage();
       }
     }
   }

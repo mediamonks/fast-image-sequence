@@ -1,26 +1,27 @@
 import type {FastImageSequence} from "./FastImageSequence.js";
+import {getImageFetchWorker, releaseImageFetchWorker} from "./ImageFetchWorker.js";
 
 export default class Frame {
   public index: number;
-  public highRes: ImageBitmap | HTMLImageElement | undefined;
+  public image: ImageBitmap | HTMLImageElement | undefined;
+
   public priority: number = 0;
   public tarImageAvailable: boolean = false;
-
   public loading: boolean = false;
 
   private context: FastImageSequence;
 
-  private _lowRes: HTMLImageElement | ImageBitmap | undefined;
-  private loadingLowRes: boolean = false;
+  private loadingTarImage: boolean = false;
+  private _tarImage: HTMLImageElement | ImageBitmap | undefined;
 
   constructor(context: FastImageSequence, index: number) {
     this.index = index;
     this.context = context;
   }
 
-  public get lowRes(): HTMLImageElement | ImageBitmap | undefined {
-    if (this._lowRes !== undefined && !this.loadingLowRes) {
-      return this._lowRes;
+  public get tarImage(): HTMLImageElement | ImageBitmap | undefined {
+    if (this._tarImage !== undefined && !this.loadingTarImage) {
+      return this._tarImage;
     } else {
       return undefined;
     }
@@ -43,25 +44,102 @@ export default class Frame {
   }
 
   public reset() {
-    this.releaseHighRes();
-    this.releaseLowRes();
+    this.releaseImage();
+    this.releaseTarImage();
     this.loading = false;
     this.priority = 0;
   }
 
   public async getImage(): Promise<HTMLImageElement | ImageBitmap> {
     return new Promise(async (resolve, reject) => {
-      if (this.highRes !== undefined) {
-        resolve(this.highRes);
-      } else if (this.lowRes !== undefined) {
-        resolve(this.lowRes);
+      if (this.image !== undefined) {
+        resolve(this.image);
+      } else if (this.tarImage !== undefined) {
+        resolve(this.tarImage);
       } else {
-        this.fetchLowRes().then(img => resolve(img)).catch(() => reject());
+        this.fetchTarImage().then(img => resolve(img)).catch(() => reject());
       }
     });
   }
 
-  public loadImage(img: HTMLImageElement, src: string): Promise<HTMLImageElement> {
+  public async fetchImage() {
+    return new Promise((resolve, reject) => {
+      if (this.imageURL) {
+        this.loading = true;
+
+        const loadingDone = (image: ImageBitmap | HTMLImageElement) => {
+          this.releaseImage();
+          this.image = image;
+          this.loading = false;
+          resolve(image);
+        };
+
+        const loadingError = (e: any) => {
+          this.reset();
+          reject(e);
+        };
+
+        if (this.context.options.useWorkerForImage) {
+          const worker = getImageFetchWorker();
+          worker.load(this.index, this.imageURL).then((imageBitmap) => {
+            loadingDone(imageBitmap);
+            releaseImageFetchWorker(worker);
+          }).catch(e => loadingError(e));
+        } else {
+          const imgElement = new Image();
+          this.loadImage(imgElement, this.imageURL).then(() => {
+            loadingDone(imgElement);
+          }).catch(e => loadingError(e));
+        }
+      } else {
+        reject();
+      }
+    });
+  }
+
+  public async fetchTarImage() {
+    return new Promise<ImageBitmap | HTMLImageElement>((resolve, reject) => {
+      if (this.tarImage !== undefined) {
+        resolve(this.tarImage);
+      } else if (this.tarImageAvailable && !this.loadingTarImage) {
+        this.loadingTarImage = true;
+        // @ts-ignore
+        this.context.tarball.getImage(this.tarImageURL, this.index).then((image: HTMLImageElement | ImageBitmap) => {
+          this._tarImage = image;
+          this.loadingTarImage = false;
+          resolve(image);
+        }).catch(e => {
+          this.loadingTarImage = false;
+          this.reset();
+          reject(e);
+        });
+      } else {
+        this.reset();
+        reject();
+      }
+    });
+  }
+
+  public releaseImage() {
+    if (this.image) {
+      if (this.image instanceof ImageBitmap) {
+        this.image.close();
+      }
+      this.image = undefined;
+    }
+  }
+
+  public releaseTarImage() {
+    if (this.tarImage) {
+      if (this.tarImage instanceof ImageBitmap) {
+        this.tarImage.close();
+      }
+      this._tarImage = undefined;
+      this.loadingTarImage = false;
+    }
+  }
+
+  private loadImage(img: HTMLImageElement, src: string): Promise<HTMLImageElement> {
     return new Promise((resolve, reject) => {
       img.onerror = (e) => reject(e);
       img.src = src;
@@ -73,47 +151,5 @@ export default class Frame {
         this.reset();
       });
     });
-  }
-
-  public async fetchLowRes() {
-    return new Promise<ImageBitmap | HTMLImageElement>((resolve, reject) => {
-      if (this.lowRes !== undefined) {
-        resolve(this.lowRes);
-      } else if (this.tarImageAvailable && !this.loadingLowRes) {
-        this.loadingLowRes = true;
-        // @ts-ignore
-        this.context.tarball.getImage(this.tarImageURL, this.index).then((image: HTMLImageElement | ImageBitmap) => {
-          this._lowRes = image;
-          this.loadingLowRes = false;
-          resolve(image);
-        }).catch(e => {
-          this.loadingLowRes = false;
-          this.reset();
-          reject(e);
-        });
-      } else {
-        this.reset();
-        reject();
-      }
-    });
-  }
-
-  public releaseHighRes() {
-    if (this.highRes) {
-      if (this.highRes instanceof ImageBitmap) {
-        this.highRes.close();
-      }
-      this.highRes = undefined;
-    }
-  }
-
-  public releaseLowRes() {
-    if (this.lowRes) {
-      if (this.lowRes instanceof ImageBitmap) {
-        this.lowRes.close();
-      }
-      this._lowRes = undefined;
-      this.loadingLowRes = false;
-    }
   }
 }
