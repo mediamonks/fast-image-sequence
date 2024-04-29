@@ -6,6 +6,7 @@ const progress = document.getElementById('slider-input');
 
 export async function initExampleWithControl(container) {
     const fastImageSequence = new FastImageSequence(container, {
+        name: 'PlayWithControlTest',
         frames: 89,
         imageURLCallback: (i) => `${('' + (i+1)).padStart(4, '0')}.webp`,
         tarURL: 'lowrespreviews.tar',

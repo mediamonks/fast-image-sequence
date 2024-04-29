@@ -2,6 +2,7 @@ import { FastImageSequence } from '../../src/index';
 
 export async function initExamplePlayBackwards(container) {
     const fastImageSequence = new FastImageSequence(container, {
+        name: 'PlayBackwardsTest at 200fps',
         frames: 89,
         imageURLCallback: (i) => `${('' + (i + 1)).padStart(4, '0')}.webp`,
         // tarURL: 'lowrespreviews.tar',

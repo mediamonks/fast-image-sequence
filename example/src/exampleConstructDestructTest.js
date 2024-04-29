@@ -14,6 +14,7 @@ export function constructDestructTest(container) {
 
 function createFastImageSequence(container) {
     const fastImageSequence = new FastImageSequence(container, {
+        name: 'ConstructDestructTest',
         frames: 89,
         imageURLCallback: (i) => `${('' + (i + 1)).padStart(4, '0')}.webp`,
         tarURL: (Math.random() > .5 ? 'lowrespreviews.tar' : undefined),

@@ -18,8 +18,11 @@ export function isMobile(): boolean {
  * @property {boolean} [preloadAllTarImages=false] - Whether all images from the tar file should be preloaded.
  * @property {boolean} [useWorkerForTar=true] - Whether to use a worker for handling the tar file.
  * @property {boolean} [useWorkerForImage=!isMobile()] - Whether to use a worker for fetching images.
- * @property {number} [numberOfCachedImages=32] - The number of images to cache.
+ * @property {number} [numberOfCachedImages=33] - The number of images to cache.
  * @property {boolean} [clearCanvas=false] - Whether to clear the canvas before drawing.
+ * @property {boolean} [showDebugInfo=false] - Whether to show debug info.
+ * @property {string} [name='FastImageSequence'] - The name of the FastImageSequence instance.
+ * @property {number} [maxConnectionLimit=4] - The maximum number of concurrent connections for fetching images.
  */
 export type FastImageSequenceOptions = {
   frames: number,
@@ -36,6 +39,8 @@ export type FastImageSequenceOptions = {
   numberOfCachedImages: number,
   clearCanvas: boolean,
   showDebugInfo: boolean,
+  name: string,
+  maxConnectionLimit: number,
 }>
 
 export class FastImageSequence {
@@ -51,8 +56,10 @@ export class FastImageSequence {
     clearCanvas:          false, // clear canvas before drawing
     useWorkerForTar:      true, // more latency, but less computation on main thread
     useWorkerForImage:    !isMobile(), // less latency and memory usage, but more computation on main thread
-    numberOfCachedImages: 32,
+    numberOfCachedImages: 33,
     showDebugInfo:        false,
+    name:                 'FastImageSequence',
+    maxConnectionLimit:   4,
   };
   public canvas: HTMLCanvasElement;
   public options: Required<FastImageSequenceOptions>;
@@ -72,8 +79,6 @@ export class FastImageSequence {
   private resizeObserver: ResizeObserver;
   private mutationOberver: MutationObserver;
   private clearCanvas: boolean = true;
-
-  private maxLoading: number = 6;
 
   private speed: number = 0;
   private prevFrame: number = 0;
@@ -195,7 +200,7 @@ export class FastImageSequence {
   /**
    * Register a tick function to be called on every frame update.
    *
-   * @param tick - The function to be called.
+   * @param func - The function to be called.
    */
   public tick(func: (dt: number) => void) {
     this.tickFuncs.push(func);
@@ -389,7 +394,6 @@ export class FastImageSequence {
   }
 
   private process(dt: number) {
-    const index = this.index;
     const priorityIndex = this.index;// this.wrapIndex(Math.min(this.spread / 2 - 2, (this.frame - this.prevFrame) * (dt * 60)) + this.frame);
 
     // set priority for all images
@@ -403,10 +407,10 @@ export class FastImageSequence {
     // release tar images if needed
     if (!this.options.preloadAllTarImages && this.options.tarURL !== undefined && this.tarball) {
       let numLoading = this.getTarStatus().numLoading;
-      const maxLoading = this.maxLoading;
+      const maxConnectionLimit = this.options.maxConnectionLimit;
       const imagesToLoad = this.frames.filter(a => a.tarImage === undefined && a.tarImageAvailable && !a.loadingTarImage && a.priority < this.spread).sort((a, b) => a.priority - b.priority);
 
-      while (numLoading < maxLoading && imagesToLoad.length > 0) {
+      while (numLoading < maxConnectionLimit && imagesToLoad.length > 0) {
         const image = imagesToLoad.shift() as Frame;
 
         image.fetchTarImage().then(() => {
@@ -422,10 +426,10 @@ export class FastImageSequence {
     // prioritize loading images and start loading images
     if (this.options.imageURLCallback) {
       let numLoading = this.getLoadStatus().numLoading;
-      const maxLoading = this.maxLoading;
+      const maxConnectionLimit = this.options.maxConnectionLimit;
       const imagesToLoad = this.frames.filter(a => a.image === undefined && !a.loading && a.priority < this.spread).sort((a, b) => a.priority - b.priority);
 
-      while (numLoading < maxLoading && imagesToLoad.length > 0) {
+      while (numLoading < maxConnectionLimit && imagesToLoad.length > 0) {
         const image = imagesToLoad.shift() as Frame;
 
         image.fetchImage().then(() => {
@@ -459,7 +463,7 @@ export class FastImageSequence {
   }
 
   private logDebugStatus(output: HTMLDivElement) {
-    let debugInfo = `FastImageSequence - frames: ${this.frames.length}, maxCache: ${this.options.numberOfCachedImages}, wrap: ${this.options.wrap} \n- last frame drawn ${this.lastFrameDrawn}/${this.index}\n`;
+    let debugInfo = `${this.options.name} - frames: ${this.frames.length}, maxCache: ${this.options.numberOfCachedImages}, wrap: ${this.options.wrap}, size: ${this.options.size}\n- last frame drawn ${this.lastFrameDrawn}/${this.index}\n`;
     const formatPercentage = (n: number) => `${Math.abs(n * 100).toFixed(1).padStart(5, ' ')}%`;
     {
       const {used, progress, numLoading, numLoaded, maxLoaded} = this.getLoadStatus();

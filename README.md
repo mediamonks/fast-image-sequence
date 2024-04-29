@@ -43,8 +43,6 @@ sequence.play();
 
 In the options object, you need to set either imageURLCallback or tarImageURLCallback. **Both are optional, but at least one must be set.** If you use tarImageURLCallback, you must also load a tar file.
 
-Normally, you only add the tar with preview images for large image sequences.
-
 The imageURLCallback and tarImageURLCallback are functions that take an index as a parameter and return a string representing the URL of the image at that index in the sequence. This allows you to dynamically generate the URLs of your images based on their index in the sequence.  
 
 In the case of a large image sequence, the normal usage of this library involves having a tar file with low-resolution preview images. These will be used when you randomly seek or jump in the sequence or when the internet speed is low. However, you are free to fine-tune it as you please. For example, you can also use a tar file with high-resolution images and don't set an imageURLCallback. This way, all images will be served from the tar file, reducing the number of requests and speeding up the loading time.  

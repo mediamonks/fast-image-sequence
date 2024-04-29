@@ -2,6 +2,7 @@ import { FastImageSequence } from '../../src/index';
 
 export async function initExampleStillImage(container) {
     const fastImageSequence = new FastImageSequence(container, {
+        name: 'StillImageTest',
         frames: 89,
         imageURLCallback: (i) => `${('' + (i + 1)).padStart(4, '0')}.webp`,
         tarURL: 'lowrespreviews.tar',
