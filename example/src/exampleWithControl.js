@@ -8,7 +8,7 @@ export async function initExampleWithControl(container) {
     const fastImageSequence = new FastImageSequence(container, {
         frames: 89,
         imageURLCallback: (i) => `${('' + (i+1)).padStart(4, '0')}.webp`,
-        tarURL: '/lowrespreviews.tar',
+        tarURL: 'lowrespreviews.tar',
         tarImageURLCallback: (i) => `${('' + (i+1)).padStart(4, '0')}.jpg`,
 
         // optional arguments:

@@ -16,7 +16,7 @@ function createFastImageSequence(container) {
     const fastImageSequence = new FastImageSequence(container, {
         frames: 89,
         imageURLCallback: (i) => `${('' + (i + 1)).padStart(4, '0')}.webp`,
-        tarURL: (Math.random() > .5 ? '/lowrespreviews.tar' : undefined),
+        tarURL: (Math.random() > .5 ? 'lowrespreviews.tar' : undefined),
         tarImageURLCallback: (i) => `${('' + (i + 1)).padStart(4, '0')}.jpg`,
 
         // optional arguments:

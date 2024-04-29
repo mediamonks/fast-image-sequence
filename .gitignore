@@ -32,3 +32,4 @@ yarn-error.log*
 
 # npm publish artifects
 /dist
+/example/dist
