@@ -59,8 +59,8 @@ export class FastImageSequence {
   public width: number = 0;
   public height: number = 0;
   public frame: number = 0;
-  public ready: Promise<void>;
   public tarball: Tarball | undefined;
+
   private context: CanvasRenderingContext2D;
   private tickFuncs: ((dt: number) => void) [] = [];
 
@@ -81,6 +81,7 @@ export class FastImageSequence {
   private lastFrameDrawn: number = -1;
   private destructed: boolean = false;
   private logElement: HTMLElement | undefined;
+  private initialized: boolean = false;
 
   /**
    * Creates an instance of FastImageSequence.
@@ -132,29 +133,17 @@ export class FastImageSequence {
       this.frames.push(new Frame(this, i));
     }
 
-    // load tar file
-    this.ready = new Promise(async (resolve, reject) => {
-      if (this.options.tarURL !== undefined) {
-        const response = await fetch(this.options.tarURL);
-        const blob = await response.blob();
-        const data = await blob.arrayBuffer();
-        this.tarball = new Tarball(data, {useWorker: this.options.useWorkerForTar});
+    this.loadResources().then(() => {
+      this.initialized = true;
 
-        this.frames.forEach(frame => frame.tarImageAvailable = frame.tarImageURL !== undefined && this.tarball?.getInfo(frame.tarImageURL) !== undefined);
-
-        if (this.options.preloadAllTarImages) {
-          await Promise.all(this.frames.map(frame => frame.fetchTarImage()));
-        }
+      if (this.options.showDebugInfo) {
+        this.logElement = createLogElement();
+        this.container.appendChild(this.logElement);
+        this.tick(() => this.logDebugStatus(this.logElement as HTMLDivElement));
       }
-      resolve();
-    });
-    this.drawingLoop(-1);
 
-    if (this.options.showDebugInfo) {
-      this.logElement = createLogElement();
-      this.container.appendChild(this.logElement);
-      this.tick(() => this.logDebugStatus(this.logElement as HTMLDivElement));
-    }
+      this.drawingLoop(-1);
+    });
   }
 
   public get isPlaying(): boolean {
@@ -179,6 +168,20 @@ export class FastImageSequence {
    */
   public set progress(value: number) {
     this.frame = (this.options.frames - 1) * value;
+  }
+
+  public get ready(): Promise<void> {
+    // check if the sequence is initialized
+    return new Promise((resolve) => {
+      const checkInitialized = () => {
+        if (this.lastFrameDrawn !== -1) {
+          resolve();
+        } else {
+          setTimeout(checkInitialized, 16);
+        }
+      };
+      checkInitialized();
+    });
   }
 
   private get index(): number {
@@ -251,6 +254,21 @@ export class FastImageSequence {
     });
   }
 
+  private async loadResources() {
+    if (this.options.tarURL !== undefined) {
+      const response = await fetch(this.options.tarURL);
+      const blob = await response.blob();
+      const data = await blob.arrayBuffer();
+      this.tarball = new Tarball(data, {useWorker: this.options.useWorkerForTar});
+
+      this.frames.forEach(frame => frame.tarImageAvailable = frame.tarImageURL !== undefined && this.tarball?.getInfo(frame.tarImageURL) !== undefined);
+
+      if (this.options.preloadAllTarImages) {
+        await Promise.all(this.frames.map(frame => frame.fetchTarImage()));
+      }
+    }
+  }
+
   private wrapIndex(frame: number) {
     const index = frame | 0;
     return this.wrapFrame(index);
@@ -271,7 +289,7 @@ export class FastImageSequence {
 
     time /= 1000;
 
-    const dt = this.startTime < 0 ? 1 / 60 : Math.min(time - this.startTime, 1 / 30);
+    const dt = this.initialized ? this.startTime < 0 ? 1 / 60 : Math.min(time - this.startTime, 1 / 30) : 0;
     this.startTime = time > 0 ? time : -1;
 
     if (this.frame - this.prevFrame < 0) this.direction = -1;
@@ -287,12 +305,6 @@ export class FastImageSequence {
     const inViewport = rect.top < window.innerHeight && rect.bottom > 0;
 
     if (inViewport) {
-      const currentFrame = this.frames[index] as Frame;
-      currentFrame.getImage().then((image) => {
-        // this.drawFrame(currentFrame);
-      }).catch(() => {
-      });
-
       // find the best matching loaded frame, based on current index and direction
       // first set some sort of priority
       this.frames.forEach((frame) => {
@@ -305,7 +317,7 @@ export class FastImageSequence {
             // direction *= -1;
           }
         }
-        // frame.priority += this.direction * direction === -1 ? this.frames.length : 0;
+        frame.priority += this.direction * direction === -1 ? this.frames.length : 0;
       });
       this.frames.sort((a, b) => b.priority - a.priority);
       //
@@ -389,33 +401,41 @@ export class FastImageSequence {
     });
 
     // release tar images if needed
-    if (!this.options.preloadAllTarImages) {
-      let {numLoaded, numLoading} = this.getTarStatus();
-      if (numLoaded > this.options.numberOfCachedImages - numLoading) {
-        this.frames.filter(a => a.tarImage !== undefined && !a.loading && a.priority >= this.spread).forEach(a => {
-          if (numLoaded > this.options.numberOfCachedImages - numLoading) {
-            a.releaseTarImage();
-            numLoaded--;
-          }
+    if (!this.options.preloadAllTarImages && this.options.tarURL !== undefined && this.tarball) {
+      let numLoading = this.getTarStatus().numLoading;
+      const maxLoading = this.maxLoading;
+      const imagesToLoad = this.frames.filter(a => a.tarImage === undefined && a.tarImageAvailable && !a.loadingTarImage && a.priority < this.spread).sort((a, b) => a.priority - b.priority);
+
+      while (numLoading < maxLoading && imagesToLoad.length > 0) {
+        const image = imagesToLoad.shift() as Frame;
+
+        image.fetchTarImage().then(() => {
+          this.releaseTarImageWithLowestPriority();
+        }).catch((e) => {
+          console.error(e);
         });
+
+        numLoading++;
       }
     }
 
     // prioritize loading images and start loading images
-    let numLoading = this.getLoadStatus().numLoading;
-    const maxLoading = this.maxLoading;
-    const imagesToLoad = this.frames.filter(a => a.image === undefined && !a.loading && a.priority < this.spread).sort((a, b) => a.priority - b.priority);
+    if (this.options.imageURLCallback) {
+      let numLoading = this.getLoadStatus().numLoading;
+      const maxLoading = this.maxLoading;
+      const imagesToLoad = this.frames.filter(a => a.image === undefined && !a.loading && a.priority < this.spread).sort((a, b) => a.priority - b.priority);
 
-    while (numLoading < maxLoading && imagesToLoad.length > 0) {
-      const image = imagesToLoad.shift() as Frame;
+      while (numLoading < maxLoading && imagesToLoad.length > 0) {
+        const image = imagesToLoad.shift() as Frame;
 
-      image.fetchImage().then(() => {
-        this.releaseImageWithLowestPriority();
-      }).catch((e) => {
-        console.error(e);
-      });
+        image.fetchImage().then(() => {
+          this.releaseImageWithLowestPriority();
+        }).catch((e) => {
+          console.error(e);
+        });
 
-      numLoading++;
+        numLoading++;
+      }
     }
   }
 
@@ -430,7 +450,7 @@ export class FastImageSequence {
 
   private getTarStatus() {
     const used = this.options.tarURL !== undefined;
-    const tarLoaded = this.tarball !== undefined;
+    const tarLoaded = this.tarball !== undefined && this.initialized;
     const numLoading = this.frames.filter(a => a.loadingTarImage).length;
     const numLoaded = this.frames.filter(a => a.tarImage !== undefined).length;
     const maxLoaded = this.options.preloadAllTarImages ? this.frames.length : this.options.numberOfCachedImages;
@@ -449,6 +469,7 @@ export class FastImageSequence {
       const {used, tarLoaded, progress, numLoading, numLoaded, maxLoaded} = this.getTarStatus();
       debugInfo += `- tar:    ${used ? `${formatPercentage(progress)}, numLoading: ${numLoading}, numLoaded: ${numLoaded}/${maxLoaded}` : 'not used'}`;
     }
+
     log(output, debugInfo);
   }
 
@@ -459,6 +480,19 @@ export class FastImageSequence {
       if (sortedFrame) {
         // console.log('release image for frame', sortedFrame.index);
         sortedFrame.releaseImage();
+      }
+    }
+  }
+
+  private releaseTarImageWithLowestPriority() {
+    if (!this.options.preloadAllTarImages) {
+      const loadedImages = this.frames.filter(a => a.tarImage !== undefined && !a.loadingTarImage);
+      if (loadedImages.length > this.options.numberOfCachedImages) {
+        const sortedFrame = loadedImages.sort((a, b) => a.priority - b.priority).pop();
+        if (sortedFrame) {
+          // console.log('release tar image for frame', sortedFrame.index);
+          sortedFrame.releaseTarImage();
+        }
       }
     }
   }

@@ -22,5 +22,5 @@ export async function initExamplePlayBackwards(container) {
 
     fastImageSequence.progress = 0;
 
-    fastImageSequence.play(-30);
+    fastImageSequence.play(-200);
 }

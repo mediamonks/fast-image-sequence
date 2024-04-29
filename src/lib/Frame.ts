@@ -67,8 +67,8 @@ export default class Frame {
 
   public async getImage(): Promise<HTMLImageElement | ImageBitmap> {
     return new Promise(async (resolve, reject) => {
-      if (this._image !== undefined) {
-        resolve(this._image);
+      if (this.image !== undefined) {
+        resolve(this.image);
       } else if (this.tarImage !== undefined) {
         resolve(this.tarImage);
       } else {
