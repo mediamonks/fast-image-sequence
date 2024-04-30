@@ -4,6 +4,12 @@ The fast-image-sequence is a powerful package that allows you to display a seque
 
 The FastImageSequence supports various options for customizing the behaviour of the image sequence, such as preloading all images, using a worker to handle tar files, and more.
 
+## Demo
+
+- [Stress test with multiple demos](https://mediamonks.github.io/fast-image-sequence/).
+
+This is a build from the repository's example/ directory.
+
 ## Getting started
 
 ### Installing
