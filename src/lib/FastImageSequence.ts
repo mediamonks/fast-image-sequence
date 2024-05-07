@@ -106,7 +106,7 @@ export class FastImageSequence {
       throw new Error('FastImageSequence: frames must be greater than 0');
     }
     // make sure the number of cached images is odd
-    this.options.numberOfCachedImages = Math.floor(this.options.numberOfCachedImages / 2) * 2 + 1;
+    this.options.numberOfCachedImages = Math.floor(this.options.numberOfCachedImages);
     this.options.numberOfCachedImages = Math.max(1, Math.min(this.options.numberOfCachedImages, this.options.frames));
 
     this.container = container;
@@ -117,6 +117,7 @@ export class FastImageSequence {
     this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
     this.canvas.style.width = `100%`;
     this.canvas.style.height = `100%`;
+    this.canvas.style.margin = `0 !important`;
 
     this.container.appendChild(this.canvas);
 
@@ -194,7 +195,7 @@ export class FastImageSequence {
   }
 
   private get spread(): number {
-    return this.options.wrap ? Math.floor(this.options.numberOfCachedImages / 2 + 1) : this.options.numberOfCachedImages;
+    return this.options.wrap ? Math.floor(this.options.numberOfCachedImages / 2) : this.options.numberOfCachedImages;
   }
 
   /**
@@ -393,31 +394,37 @@ export class FastImageSequence {
     this.context.drawImage(image, 0, 0, image.width, image.height, dx, dy, this.width, this.height);
   }
 
-  private process(dt: number) {
+  private setLoadingPriority() {
     const priorityIndex = this.index;// this.wrapIndex(Math.min(this.spread / 2 - 2, (this.frame - this.prevFrame) * (dt * 60)) + this.frame);
-
-    // set priority for all images
     this.frames.forEach((image) => {
-      image.priority = Math.abs(image.index - priorityIndex);
+      image.priority = Math.abs(image.index + 0.25 - priorityIndex);
       if (this.options.wrap) {
         image.priority = Math.min(image.priority, this.options.frames - image.priority);
       }
     });
+  }
+
+  private process(dt: number) {
+    this.setLoadingPriority();
 
     // release tar images if needed
     if (!this.options.preloadAllTarImages && this.options.tarURL !== undefined && this.tarball) {
-      let numLoading = this.getTarStatus().numLoading;
+      let {numLoading, numLoaded} = this.getTarStatus();
       const maxConnectionLimit = this.options.maxConnectionLimit;
-      const imagesToLoad = this.frames.filter(a => a.tarImage === undefined && a.tarImageAvailable && !a.loadingTarImage && a.priority < this.spread).sort((a, b) => a.priority - b.priority);
+      const imagesToLoad = this.frames.filter(a => a.tarImage === undefined && a.tarImageAvailable && !a.loadingTarImage).sort((a, b) => a.priority - b.priority);
+      const loadedImages = this.frames.filter(a => a.tarImage !== undefined && a.tarImageAvailable && !a.loadingTarImage).sort((a, b) => b.priority - a.priority);
+      const maxLoadedPriority = loadedImages.shift()?.priority ?? 1e10;
 
       while (numLoading < maxConnectionLimit && imagesToLoad.length > 0) {
         const image = imagesToLoad.shift() as Frame;
 
-        image.fetchTarImage().then(() => {
-          this.releaseTarImageWithLowestPriority();
-        }).catch((e) => {
-          console.error(e);
-        });
+        if (image.priority < maxLoadedPriority || numLoaded < this.options.numberOfCachedImages - numLoading) {
+          image.fetchTarImage().then(() => {
+            this.releaseTarImageWithLowestPriority();
+          }).catch((e) => {
+            console.error(e);
+          });
+        }
 
         numLoading++;
       }
@@ -425,18 +432,21 @@ export class FastImageSequence {
 
     // prioritize loading images and start loading images
     if (this.options.imageURLCallback) {
-      let numLoading = this.getLoadStatus().numLoading;
+      let {numLoading, numLoaded} = this.getLoadStatus();
       const maxConnectionLimit = this.options.maxConnectionLimit;
-      const imagesToLoad = this.frames.filter(a => a.image === undefined && !a.loading && a.priority < this.spread).sort((a, b) => a.priority - b.priority);
+      const imagesToLoad = this.frames.filter(a => a.image === undefined && !a.loading && a.priority).sort((a, b) => a.priority - b.priority);
+      const loadedImages = this.frames.filter(a => a.image !== undefined && !a.loading).sort((a, b) => b.priority - a.priority);
+      const maxLoadedPriority = loadedImages.shift()?.priority ?? 1e10;
 
       while (numLoading < maxConnectionLimit && imagesToLoad.length > 0) {
         const image = imagesToLoad.shift() as Frame;
-
-        image.fetchImage().then(() => {
-          this.releaseImageWithLowestPriority();
-        }).catch((e) => {
-          console.error(e);
-        });
+        if (image.priority < maxLoadedPriority || numLoaded < this.options.numberOfCachedImages - numLoading) {
+          image.fetchImage().then(() => {
+            this.releaseImageWithLowestPriority();
+          }).catch((e) => {
+            console.error(e);
+          });
+        }
 
         numLoading++;
       }
@@ -478,6 +488,7 @@ export class FastImageSequence {
   }
 
   private releaseImageWithLowestPriority() {
+    this.setLoadingPriority();
     const loadedImages = this.frames.filter(a => a.image !== undefined && !a.loading);
     if (loadedImages.length > this.options.numberOfCachedImages) {
       const sortedFrame = loadedImages.sort((a, b) => a.priority - b.priority).pop();
@@ -490,6 +501,7 @@ export class FastImageSequence {
 
   private releaseTarImageWithLowestPriority() {
     if (!this.options.preloadAllTarImages) {
+      this.setLoadingPriority();
       const loadedImages = this.frames.filter(a => a.tarImage !== undefined && !a.loadingTarImage);
       if (loadedImages.length > this.options.numberOfCachedImages) {
         const sortedFrame = loadedImages.sort((a, b) => a.priority - b.priority).pop();
