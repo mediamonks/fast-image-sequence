@@ -115,9 +115,11 @@ export class FastImageSequence {
     this.context = <CanvasRenderingContext2D>this.canvas.getContext('2d');
     this.context.fillStyle = this.options.fillStyle;
     this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    this.canvas.style.inset = `0`;
     this.canvas.style.width = `100%`;
     this.canvas.style.height = `100%`;
-    this.canvas.style.margin = `0 !important`;
+    this.canvas.style.margin = `0`;
+    this.canvas.style.display = `block`;
 
     this.container.appendChild(this.canvas);
 
