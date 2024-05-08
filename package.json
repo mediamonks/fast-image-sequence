@@ -1,6 +1,6 @@
 {
   "name": "@mediamonks/fast-image-sequence",
-  "version": "0.4.4",
+  "version": "0.4.5",
   "description": "The fast-image-sequence-renderer is a powerful package that allows you to display a sequence of images at a high frame rate on your website.",
   "keywords": [
     "image sequence",
