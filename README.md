@@ -141,7 +141,8 @@ To create a tarball with preview images, you can follow these steps:
 3. Alternatively, use a tar tool to create the tarball: if you are comfortable with the command line, you can use the `tar` command in Unix-based systems like this:
 
     ```sh
-    tar -cvf preview_images.tar -C /path/to/your/preview_images .
+    cd /path/to/your/images
+    tar -cvf sequence.tar -C ./ .
     ```
 
    This command will create a tarball named `preview_images.tar` from the directory `/path/to/your/preview_images`.
