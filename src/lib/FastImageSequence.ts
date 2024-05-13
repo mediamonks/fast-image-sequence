@@ -278,8 +278,12 @@ export class FastImageSequence {
   }
 
   /**
-   * Set the size of the image sequence.
-    * @param options
+   * Set the size and alignment of the image sequence on the canvas.
+   *
+   * @param {Partial<FastImageSequenceSizeOptions>} options - An object containing the size and alignment options.
+   * @property {string} options.size - How the image should be resized to fit the canvas. It can be either 'contain' or 'cover'.
+   * @property {number} options.horizontalAlign - The horizontal alignment of the image. It should be a number between 0 and 1.
+   * @property {number} options.verticalAlign - The vertical alignment of the image. It should be a number between 0 and 1.
    */
   public setSize(options: Partial<FastImageSequenceSizeOptions>) {
     this.options = {...this.options, ...options};
