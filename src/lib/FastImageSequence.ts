@@ -1,9 +1,15 @@
 import Tarball from "./Tarball.js";
 import Frame from "./Frame.js";
-import {createLogElement, log} from "./Log.js";
+import {createLogElement, logToScreen} from "./LogToScreen.js";
 
 export function isMobile(): boolean {
   return (typeof navigator !== "undefined" && /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent));
+}
+
+export type FastImageSequenceSizeOptions = {
+  size: 'contain' | 'cover';
+  horizontalAlign: number;
+  verticalAlign: number;
 }
 
 /**
@@ -15,6 +21,8 @@ export function isMobile(): boolean {
  * @property {boolean} [wrap=false] - Whether the sequence should wrap around to the beginning when it reaches the end.
  * @property {string} [fillStyle='#00000000'] - The fill style of the canvas.
  * @property {'contain' | 'cover'} [size='cover'] - How the image should be resized to fit the canvas.
+ * @property {number} [horizontalAlign=0.5] - The horizontal alignment of the image.
+ * @property {number} [verticalAlign=0.5] - The vertical alignment of the image.
  * @property {boolean} [preloadAllTarImages=false] - Whether all images from the tar file should be preloaded.
  * @property {boolean} [useWorkerForTar=true] - Whether to use a worker for handling the tar file.
  * @property {boolean} [useWorkerForImage=!isMobile()] - Whether to use a worker for fetching images.
@@ -32,7 +40,6 @@ export type FastImageSequenceOptions = {
   tarImageURLCallback: ((index: number) => string) | undefined,
   wrap: boolean;
   fillStyle: string;
-  size: 'contain' | 'cover';
   preloadAllTarImages: boolean;
   useWorkerForTar: boolean;
   useWorkerForImage: boolean;
@@ -41,7 +48,7 @@ export type FastImageSequenceOptions = {
   showDebugInfo: boolean,
   name: string,
   maxConnectionLimit: number,
-}>
+}> & Partial<FastImageSequenceSizeOptions>;
 
 export class FastImageSequence {
   private static defaultOptions: Required<FastImageSequenceOptions> = {
@@ -60,6 +67,8 @@ export class FastImageSequence {
     showDebugInfo:        false,
     name:                 'FastImageSequence',
     maxConnectionLimit:   4,
+    horizontalAlign:      0.5,
+    verticalAlign:        0.5,
   };
   public canvas: HTMLCanvasElement;
   public options: Required<FastImageSequenceOptions>;
@@ -87,6 +96,7 @@ export class FastImageSequence {
   private destructed: boolean = false;
   private logElement: HTMLElement | undefined;
   private initialized: boolean = false;
+  private log: (...args: any[]) => void;
 
   /**
    * Creates an instance of FastImageSequence.
@@ -140,9 +150,14 @@ export class FastImageSequence {
     for (let i = 0; i < this.options.frames; i++) {
       this.frames.push(new Frame(this, i));
     }
+    this.log = this.options.showDebugInfo ? console.log : () => {
+    };
 
     this.loadResources().then(() => {
       this.initialized = true;
+
+      this.log('Frames', this.frames);
+      this.log('Options', this.options);
 
       if (this.options.showDebugInfo) {
         this.logElement = createLogElement();
@@ -262,12 +277,23 @@ export class FastImageSequence {
     });
   }
 
+  /**
+   * Set the size of the image sequence.
+    * @param options
+   */
+  public setSize(options: Partial<FastImageSequenceSizeOptions>) {
+    this.options = {...this.options, ...options};
+    this.clearCanvas = true;
+  }
+
   private async loadResources() {
     if (this.options.tarURL !== undefined) {
       const response = await fetch(this.options.tarURL);
       const blob = await response.blob();
       const data = await blob.arrayBuffer();
       this.tarball = new Tarball(data, {useWorker: this.options.useWorkerForTar});
+
+      this.log('Tarball', this.tarball);
 
       this.frames.forEach(frame => frame.tarImageAvailable = frame.tarImageURL !== undefined && this.tarball?.getInfo(frame.tarImageURL) !== undefined);
 
@@ -386,8 +412,8 @@ export class FastImageSequence {
 
     }
 
-    const dx = (this.canvas.width - this.width) / 2;
-    const dy = (this.canvas.height - this.height) / 2;
+    const dx = (this.canvas.width - this.width) * this.options.horizontalAlign;
+    const dy = (this.canvas.height - this.height) * this.options.verticalAlign;
 
     if (this.clearCanvas || this.options.clearCanvas) {
       this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
@@ -486,7 +512,7 @@ export class FastImageSequence {
       debugInfo += `- tar:    ${used ? `${formatPercentage(progress)}, numLoading: ${numLoading}, numLoaded: ${numLoaded}/${maxLoaded}` : 'not used'}`;
     }
 
-    log(output, debugInfo);
+    logToScreen(output, debugInfo);
   }
 
   private releaseImageWithLowestPriority() {

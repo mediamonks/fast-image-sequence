@@ -13,6 +13,6 @@ export function createLogElement() {
   return logElement;
 }
 
-export function log(logElement: HTMLElement, log: string) {
+export function logToScreen(logElement: HTMLElement, log: string) {
   logElement.innerHTML = `<pre>${log}</pre>`;
 }
