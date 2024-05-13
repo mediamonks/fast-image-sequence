@@ -145,8 +145,6 @@ To create a tarball with preview images, you can follow these steps:
     tar -cvf sequence.tar -C ./ .
     ```
 
-   This command will create a tarball named `preview_images.tar` from the directory `/path/to/your/preview_images`.
-
 Once you have your tarball, you can use it with `FastImageSequence` by setting the `tarURL` option to the URL of your tarball and implementing the `tarImageURLCallback` to return the URL of an image in the tarball given its index.
 
 ## Building
