@@ -132,7 +132,7 @@ sequence.getFrameImage(index);
 
 A tarball is a collection of files and directories stored in a single file. In the context of `FastImageSequence`, you can use a tarball to store (low-resolution preview) images for your image sequence. This can be particularly useful when you want to seek or jump in the sequence quickly or when the internet speed is low.
 
-To create a tarball with preview images, you can follow these steps:
+To create a tarball with images, you can follow these steps:
 
 1. Prepare your images: Make sure all your images are in a single directory. The images should be in a sequence and named consistently (for example, `image1.jpg`, `image2.jpg`, `image3.jpg`, etc.).
 
