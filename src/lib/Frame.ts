@@ -78,7 +78,7 @@ export default class Frame {
   }
 
   public async fetchImage() {
-    return new Promise((resolve, reject) => {
+    return new Promise<ImageBitmap | HTMLImageElement>((resolve, reject) => {
       if (this.imageURL) {
         this.loading = true;
 

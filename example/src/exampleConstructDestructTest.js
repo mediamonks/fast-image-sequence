@@ -21,12 +21,12 @@ function createFastImageSequence(container) {
         tarImageURLCallback: (i) => `${('' + (i + 1)).padStart(4, '0')}.jpg`,
 
         // optional arguments:
-        wrap: Math.random() > .5, // default false
-        size: Math.random() > .5 ? 'cover' : 'contain', // default 'cover'
+        loop: Math.random() > .5, // default false
+        objectFit: Math.random() > .5 ? 'cover' : 'contain', // default 'cover'
         fillStyle: '#00000000', // default #00000000
         preloadAllTarImages: Math.random() > .5,
         useWorkerForTar: Math.random() > .5, // default true
-        numberOfCachedImages: (1+Math.random()*32)|0, // default 32
+        maxCachedImages: (1+Math.random()*32)|0, // default 32
         clearCanvas: Math.random() > .5, // default false
         showDebugInfo: true,
     });

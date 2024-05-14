@@ -1,14 +1,16 @@
 export function createLogElement() {
   const logElement = document.createElement('div');
-  logElement.style.position = 'absolute';
-  logElement.style.top = '0';
-  logElement.style.left = '0';
-  logElement.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
-  logElement.style.color = 'white';
-  logElement.style.padding = '8px';
-  logElement.style.fontSize = '12px';
-  logElement.style.zIndex = '1000';
-  logElement.style.lineHeight = '20px';
+  Object.assign(logElement.style, {
+    position: 'absolute',
+    top: '0',
+    left: '0',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    color: 'white',
+    padding: '8px',
+    fontSize: '12px',
+    zIndex: '1000',
+    lineHeight: '20px'
+  });
 
   return logElement;
 }

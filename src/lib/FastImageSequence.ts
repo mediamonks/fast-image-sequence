@@ -1,13 +1,18 @@
 import Tarball from "./Tarball.js";
 import Frame from "./Frame.js";
 import {createLogElement, logToScreen} from "./LogToScreen.js";
+import {downloadFile} from "./DownloadFile.js";
 
 export function isMobile(): boolean {
   return (typeof navigator !== "undefined" && /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent));
 }
 
-export type FastImageSequenceSizeOptions = {
-  size: 'contain' | 'cover';
+function clamp(value: number, min: number, max: number) {
+  return Math.min(Math.max(value, min), max);
+}
+
+export type FastImageSequenceDisplayOptions = {
+  objectFit: 'contain' | 'cover';
   horizontalAlign: number;
   verticalAlign: number;
 }
@@ -15,18 +20,18 @@ export type FastImageSequenceSizeOptions = {
 /**
  * @typedef {Object} FastImageSequenceOptions
  * @property {number} frames - The number of frames in the sequence.
- * @property {string | undefined} tarURL - The URL of the tar file containing the images for the sequence.
  * @property {((index: number) => string) | undefined} imageURLCallback - A callback function that returns the URL of an image given its index.
+ * @property {string | undefined} tarURL - The URL of the tar file containing the images for the sequence.
  * @property {((index: number) => string) | undefined} tarImageURLCallback - A callback function that returns the URL of an image in the tar file given its index.
- * @property {boolean} [wrap=false] - Whether the sequence should wrap around to the beginning when it reaches the end.
+ * @property {boolean} [loop=false] - Whether the sequence should wrap around to the beginning when it reaches the end.
  * @property {string} [fillStyle='#00000000'] - The fill style of the canvas.
- * @property {'contain' | 'cover'} [size='cover'] - How the image should be resized to fit the canvas.
+ * @property {'contain' | 'cover'} [objectFit='cover'] - How the image should be resized to fit the canvas.
  * @property {number} [horizontalAlign=0.5] - The horizontal alignment of the image.
  * @property {number} [verticalAlign=0.5] - The vertical alignment of the image.
  * @property {boolean} [preloadAllTarImages=false] - Whether all images from the tar file should be preloaded.
  * @property {boolean} [useWorkerForTar=true] - Whether to use a worker for handling the tar file.
  * @property {boolean} [useWorkerForImage=!isMobile()] - Whether to use a worker for fetching images.
- * @property {number} [numberOfCachedImages=33] - The number of images to cache.
+ * @property {number} [maxCachedImages=32] - The number of images to cache.
  * @property {boolean} [clearCanvas=false] - Whether to clear the canvas before drawing.
  * @property {boolean} [showDebugInfo=false] - Whether to show debug info.
  * @property {string} [name='FastImageSequence'] - The name of the FastImageSequence instance.
@@ -38,17 +43,17 @@ export type FastImageSequenceOptions = {
   tarURL: string | undefined,
   imageURLCallback: ((index: number) => string) | undefined,
   tarImageURLCallback: ((index: number) => string) | undefined,
-  wrap: boolean;
+  loop: boolean;
   fillStyle: string;
   preloadAllTarImages: boolean;
   useWorkerForTar: boolean;
   useWorkerForImage: boolean;
-  numberOfCachedImages: number,
+  maxCachedImages: number,
   clearCanvas: boolean,
   showDebugInfo: boolean,
   name: string,
   maxConnectionLimit: number,
-}> & Partial<FastImageSequenceSizeOptions>;
+}> & Partial<FastImageSequenceDisplayOptions>;
 
 export class FastImageSequence {
   private static defaultOptions: Required<FastImageSequenceOptions> = {
@@ -56,14 +61,14 @@ export class FastImageSequence {
     imageURLCallback:     undefined,
     tarURL:               undefined,
     tarImageURLCallback:  undefined,
-    wrap:                 false,
+    loop:                 false,
     fillStyle:            '#00000000',
-    size:                 'cover',
+    objectFit:            'cover',
     preloadAllTarImages:  false,
     clearCanvas:          false, // clear canvas before drawing
     useWorkerForTar:      true, // more latency, but less computation on main thread
     useWorkerForImage:    !isMobile(), // less latency and memory usage, but more computation on main thread
-    numberOfCachedImages: 33,
+    maxCachedImages: 32,
     showDebugInfo:        false,
     name:                 'FastImageSequence',
     maxConnectionLimit:   4,
@@ -97,6 +102,7 @@ export class FastImageSequence {
   private logElement: HTMLElement | undefined;
   private initialized: boolean = false;
   private log: (...args: any[]) => void;
+  private tarLoadProgress: number = 0;
 
   /**
    * Creates an instance of FastImageSequence.
@@ -116,8 +122,8 @@ export class FastImageSequence {
       throw new Error('FastImageSequence: frames must be greater than 0');
     }
     // make sure the number of cached images is odd
-    this.options.numberOfCachedImages = Math.floor(this.options.numberOfCachedImages);
-    this.options.numberOfCachedImages = Math.max(1, Math.min(this.options.numberOfCachedImages, this.options.frames));
+    this.options.maxCachedImages = Math.floor(this.options.maxCachedImages);
+    this.options.maxCachedImages = clamp(this.options.frames, 1, this.options.maxCachedImages);
 
     this.container = container;
 
@@ -125,11 +131,13 @@ export class FastImageSequence {
     this.context = <CanvasRenderingContext2D>this.canvas.getContext('2d');
     this.context.fillStyle = this.options.fillStyle;
     this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
-    this.canvas.style.inset = `0`;
-    this.canvas.style.width = `100%`;
-    this.canvas.style.height = `100%`;
-    this.canvas.style.margin = `0`;
-    this.canvas.style.display = `block`;
+    Object.assign(this.canvas.style, {
+      inset: '0',
+      width: '100%',
+      height: '100%',
+      margin: '0',
+      display: 'block'
+    });
 
     this.container.appendChild(this.canvas);
 
@@ -169,12 +177,27 @@ export class FastImageSequence {
     });
   }
 
-  public get isPlaying(): boolean {
+  /**
+   * Get whether the image sequence is playing.
+   */
+  public get playing(): boolean {
     return this.speed !== 0;
   }
 
-  public get isPaused(): boolean {
-    return !this.isPlaying;
+  /**
+   * Get whether the image sequence is paused.
+   */
+  public get paused(): boolean {
+    return !this.playing;
+  }
+
+  /**
+   * Get the current progress of the image sequence loading.
+   */
+  public get loadProgress(): number {
+    const {used, numLoaded, numLoading, maxLoaded} = this.getLoadStatus();
+    const {used: usedTar, numLoading: numLoadingTar, numLoaded: numLoadedTar, maxLoaded: maxLoadedTar, tarLoadProgress} = this.getTarStatus();
+    return ((used ? Math.max(numLoaded - numLoading, 0) : 0) + (usedTar ? (Math.max(numLoadedTar - numLoadingTar, 0) / 2 + tarLoadProgress) : 0)) / ((used ? maxLoaded : 0) + (usedTar ? (maxLoadedTar / 2 + 1) : 0));
   }
 
   /**
@@ -193,6 +216,9 @@ export class FastImageSequence {
     this.frame = (this.options.frames - 1) * value;
   }
 
+  /**
+   * Get a promise that resolves when the image sequence is ready to play.
+   */
   public get ready(): Promise<void> {
     // check if the sequence is initialized
     return new Promise((resolve) => {
@@ -205,14 +231,6 @@ export class FastImageSequence {
       };
       checkInitialized();
     });
-  }
-
-  private get index(): number {
-    return this.wrapIndex(this.frame);
-  }
-
-  private get spread(): number {
-    return this.options.wrap ? Math.floor(this.options.numberOfCachedImages / 2) : this.options.numberOfCachedImages;
   }
 
   /**
@@ -244,9 +262,37 @@ export class FastImageSequence {
    * @param {number} index - The index of the frame.
    * @returns {Promise<HTMLImageElement | ImageBitmap>} - A promise that resolves with the image of the frame.
    */
-  public getFrameImage(index: number): Promise<HTMLImageElement | ImageBitmap> {
-    // @ts-ignore
-    return this.frames[this.wrapIndex(index)].getImage();
+  public async getFrameImage(index: number): Promise<HTMLImageElement | ImageBitmap> {
+    const frame = this.frames[this.wrapIndex(index)] as Frame;
+    try {
+        return await frame.fetchImage();
+    } catch {
+        return await frame.fetchTarImage();
+    }
+  }
+
+  /**
+   * Set the maximum number of images to cache.
+   * @param maxCache - The maximum number of images to cache.
+   * @param onProgress - A callback function that is called with the progress of the loading.
+   */
+  public setMaxCachedImages(maxCache: number, onProgress?: (progress: number) => void): Promise<boolean> {
+    this.options.maxCachedImages = clamp(maxCache, 1, this.options.frames);
+    let loadProgress = this.loadProgress;
+    return new Promise((resolve) => {
+      const checkProgress = () => {
+        if (this.loadProgress >= 1) {
+          resolve(true);
+        } else {
+          if (onProgress && loadProgress !== this.loadProgress) {
+            onProgress(this.loadProgress);
+            loadProgress = this.loadProgress;
+          }
+          setTimeout(checkProgress, 16);
+        }
+      };
+      checkProgress();
+    });
   }
 
   /**
@@ -280,21 +326,32 @@ export class FastImageSequence {
   /**
    * Set the size and alignment of the image sequence on the canvas.
    *
-   * @param {Partial<FastImageSequenceSizeOptions>} options - An object containing the size and alignment options.
-   * @property {string} options.size - How the image should be resized to fit the canvas. It can be either 'contain' or 'cover'.
+   * @param {Partial<FastImageSequenceDisplayOptions>} options - An object containing the size and alignment options.
+   * @property {string} options.objectFit - How the image should be resized to fit the canvas. It can be either 'contain' or 'cover'.
    * @property {number} options.horizontalAlign - The horizontal alignment of the image. It should be a number between 0 and 1.
    * @property {number} options.verticalAlign - The vertical alignment of the image. It should be a number between 0 and 1.
    */
-  public setSize(options: Partial<FastImageSequenceSizeOptions>) {
+  public setDisplayOptions(options: Partial<FastImageSequenceDisplayOptions>) {
     this.options = {...this.options, ...options};
     this.clearCanvas = true;
   }
 
+  private get index(): number {
+    return this.wrapIndex(this.frame);
+  }
+
+  private get spread(): number {
+    return this.options.loop ? Math.floor(this.options.maxCachedImages / 2) : this.options.maxCachedImages;
+  }
+
   private async loadResources() {
     if (this.options.tarURL !== undefined) {
-      const response = await fetch(this.options.tarURL);
-      const blob = await response.blob();
-      const data = await blob.arrayBuffer();
+      // const response = await fetch(this.options.tarURL);
+      // const blob = await response.blob();
+      // const data = await blob.arrayBuffer();
+      const data = await downloadFile(this.options.tarURL, (progress) => {
+        this.tarLoadProgress = progress;
+      });
       this.tarball = new Tarball(data, {useWorker: this.options.useWorkerForTar});
 
       this.log('Tarball', this.tarball);
@@ -305,6 +362,7 @@ export class FastImageSequence {
         await Promise.all(this.frames.map(frame => frame.fetchTarImage()));
       }
     }
+    await this.getFrameImage(0);
   }
 
   private wrapIndex(frame: number) {
@@ -313,10 +371,10 @@ export class FastImageSequence {
   }
 
   private wrapFrame(index: number) {
-    if (this.options.wrap) {
+    if (this.options.loop) {
       return ((index % this.options.frames) + this.options.frames) % this.options.frames;
     } else {
-      return Math.max(Math.min(index, this.options.frames - 1), 0);
+      return clamp(index, 0, this.options.frames - 1);
     }
   }
 
@@ -348,7 +406,7 @@ export class FastImageSequence {
       this.frames.forEach((frame) => {
         frame.priority = Math.abs(frame.index - index);
         let direction = Math.sign(this.frame - this.prevFrame);
-        if (this.options.wrap) {
+        if (this.options.loop) {
           const wrappedPriority = this.options.frames - frame.priority;
           if (wrappedPriority < frame.priority) {
             frame.priority = wrappedPriority;
@@ -395,7 +453,7 @@ export class FastImageSequence {
     this.width = Math.max(this.width, image.width);
     this.height = Math.max(this.height, image.height);
 
-    if (this.options.size === 'contain') {
+    if (this.options.objectFit === 'contain') {
       // contain
       const canvasWidth = containerAspect > imageAspect ? this.height * containerAspect : this.width;
       const canvasHeight = containerAspect > imageAspect ? this.height : this.width / containerAspect;
@@ -430,7 +488,7 @@ export class FastImageSequence {
     const priorityIndex = this.index;// this.wrapIndex(Math.min(this.spread / 2 - 2, (this.frame - this.prevFrame) * (dt * 60)) + this.frame);
     this.frames.forEach((image) => {
       image.priority = Math.abs(image.index + 0.25 - priorityIndex);
-      if (this.options.wrap) {
+      if (this.options.loop) {
         image.priority = Math.min(image.priority, this.options.frames - image.priority);
       }
     });
@@ -450,7 +508,7 @@ export class FastImageSequence {
       while (numLoading < maxConnectionLimit && imagesToLoad.length > 0) {
         const image = imagesToLoad.shift() as Frame;
 
-        if (image.priority < maxLoadedPriority || numLoaded < this.options.numberOfCachedImages - numLoading) {
+        if (image.priority < maxLoadedPriority || numLoaded < this.options.maxCachedImages - numLoading) {
           image.fetchTarImage().then(() => {
             this.releaseTarImageWithLowestPriority();
           }).catch((e) => {
@@ -472,7 +530,7 @@ export class FastImageSequence {
 
       while (numLoading < maxConnectionLimit && imagesToLoad.length > 0) {
         const image = imagesToLoad.shift() as Frame;
-        if (image.priority < maxLoadedPriority || numLoaded < this.options.numberOfCachedImages - numLoading) {
+        if (image.priority < maxLoadedPriority || numLoaded < this.options.maxCachedImages - numLoading) {
           image.fetchImage().then(() => {
             this.releaseImageWithLowestPriority();
           }).catch((e) => {
@@ -489,8 +547,8 @@ export class FastImageSequence {
     const used = this.options.imageURLCallback !== undefined;
     const numLoading = this.frames.filter(a => a.loading).length;
     const numLoaded = this.frames.filter(a => a.image !== undefined).length;
-    const maxLoaded = this.options.numberOfCachedImages;
-    const progress = (maxLoaded - numLoading) / maxLoaded;
+    const maxLoaded = this.options.maxCachedImages;
+    const progress = Math.max(0, numLoaded - numLoading) / maxLoaded;
     return {used, progress, numLoading, numLoaded, maxLoaded};
   }
 
@@ -499,14 +557,15 @@ export class FastImageSequence {
     const tarLoaded = this.tarball !== undefined && this.initialized;
     const numLoading = this.frames.filter(a => a.loadingTarImage).length;
     const numLoaded = this.frames.filter(a => a.tarImage !== undefined).length;
-    const maxLoaded = this.options.preloadAllTarImages ? this.frames.length : this.options.numberOfCachedImages;
+    const maxLoaded = this.options.preloadAllTarImages ? this.frames.length : this.options.maxCachedImages;
+    const tarLoadProgress = this.tarLoadProgress;
     const progress = numLoaded / maxLoaded;
-    return {used, tarLoaded, progress, numLoading, numLoaded, maxLoaded};
+    return {used, tarLoaded, progress, numLoading, numLoaded, maxLoaded, tarLoadProgress};
   }
 
   private logDebugStatus(output: HTMLDivElement) {
-    let debugInfo = `${this.options.name} - frames: ${this.frames.length}, maxCache: ${this.options.numberOfCachedImages}, wrap: ${this.options.wrap}, size: ${this.options.size}\n- last frame drawn ${this.lastFrameDrawn}/${this.index}\n`;
     const formatPercentage = (n: number) => `${Math.abs(n * 100).toFixed(1).padStart(5, ' ')}%`;
+    let debugInfo = `${this.options.name} - frames: ${this.frames.length}, maxCache: ${this.options.maxCachedImages}, wrap: ${this.options.loop}, size: ${this.options.objectFit}\n- loadProgress ${formatPercentage(this.loadProgress)}, last frame drawn ${this.lastFrameDrawn}/${this.index}\n`;
     {
       const {used, progress, numLoading, numLoaded, maxLoaded} = this.getLoadStatus();
       debugInfo += `- images: ${used ? `${formatPercentage(progress)}, numLoading: ${numLoading}, numLoaded: ${numLoaded}/${maxLoaded}` : 'not used'} \n`;
@@ -522,7 +581,7 @@ export class FastImageSequence {
   private releaseImageWithLowestPriority() {
     this.setLoadingPriority();
     const loadedImages = this.frames.filter(a => a.image !== undefined && !a.loading);
-    if (loadedImages.length > this.options.numberOfCachedImages) {
+    if (loadedImages.length > this.options.maxCachedImages) {
       const sortedFrame = loadedImages.sort((a, b) => a.priority - b.priority).pop();
       if (sortedFrame) {
         // console.log('release image for frame', sortedFrame.index);
@@ -535,7 +594,7 @@ export class FastImageSequence {
     if (!this.options.preloadAllTarImages) {
       this.setLoadingPriority();
       const loadedImages = this.frames.filter(a => a.tarImage !== undefined && !a.loadingTarImage);
-      if (loadedImages.length > this.options.numberOfCachedImages) {
+      if (loadedImages.length > this.options.maxCachedImages) {
         const sortedFrame = loadedImages.sort((a, b) => a.priority - b.priority).pop();
         if (sortedFrame) {
           // console.log('release tar image for frame', sortedFrame.index);

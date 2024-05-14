@@ -9,12 +9,12 @@ export async function initExamplePlayBackwards(container) {
         // tarImageURLCallback: (i) => `${('' + (i+1)).padStart(4, '0')}.jpg`,
 
         // optional arguments:
-        wrap: true, // default false
-        size: 'cover', // default 'cover'
+        loop: true, // default false
+        objectFit: 'cover', // default 'cover'
         fillStyle: '#00000000', // default #00000000
         preloadAllTarImages: false,
         useWorkerForTar: true, // default true
-        numberOfCachedImages: 32, // default 32
+        maxCachedImages: 32, // default 32
         clearCanvas: false, // default false
         showDebugInfo: true,
     });
