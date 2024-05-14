@@ -48,7 +48,7 @@ export default class Tarball {
   }
 
   public getInfo(file_name: string) {
-    return this.fileInfo.find(info => info.name == file_name);
+    return this.fileInfo.find(info => info.name.includes(file_name));
   }
 
   public getImage(file_name: string, index: number) {
