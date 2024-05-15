@@ -13,6 +13,7 @@ export function downloadFile(url: string, onProgress?: (progress: number) => voi
 
     xhr.onload = function() {
       if (xhr.status === 200) {
+        onProgress && onProgress(1);
         resolve(xhr.response);
       } else {
         reject(new Error(`Error ${xhr.status}: ${xhr.statusText}`));
