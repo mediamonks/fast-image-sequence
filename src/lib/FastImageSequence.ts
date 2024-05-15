@@ -57,23 +57,23 @@ export type FastImageSequenceOptions = {
 
 export class FastImageSequence {
   private static defaultOptions: Required<FastImageSequenceOptions> = {
-    frames:               1,
-    imageURLCallback:     undefined,
-    tarURL:               undefined,
-    tarImageURLCallback:  undefined,
-    loop:                 false,
-    fillStyle:            '#00000000',
-    objectFit:            'cover',
-    preloadAllTarImages:  false,
-    clearCanvas:          false, // clear canvas before drawing
-    useWorkerForTar:      true, // more latency, but less computation on main thread
-    useWorkerForImage:    !isMobile(), // less latency and memory usage, but more computation on main thread
-    maxCachedImages: 32,
-    showDebugInfo:        false,
-    name:                 'FastImageSequence',
-    maxConnectionLimit:   4,
-    horizontalAlign:      0.5,
-    verticalAlign:        0.5,
+    frames:              1,
+    imageURLCallback:    undefined,
+    tarURL:              undefined,
+    tarImageURLCallback: undefined,
+    loop:                false,
+    fillStyle:           '#00000000',
+    objectFit:           'cover',
+    preloadAllTarImages: false,
+    clearCanvas:         false, // clear canvas before drawing
+    useWorkerForTar:     true, // more latency, but less computation on main thread
+    useWorkerForImage:   !isMobile(), // less latency and memory usage, but more computation on main thread
+    maxCachedImages:     32,
+    showDebugInfo:       false,
+    name:                'FastImageSequence',
+    maxConnectionLimit:  4,
+    horizontalAlign:     0.5,
+    verticalAlign:       0.5,
   };
   public canvas: HTMLCanvasElement;
   public options: Required<FastImageSequenceOptions>;
@@ -132,11 +132,11 @@ export class FastImageSequence {
     this.context.fillStyle = this.options.fillStyle;
     this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
     Object.assign(this.canvas.style, {
-      inset: '0',
-      width: '100%',
-      height: '100%',
-      margin: '0',
-      display: 'block'
+      inset:   '0',
+      width:   '100%',
+      height:  '100%',
+      margin:  '0',
+      display: 'block',
     });
 
     this.container.appendChild(this.canvas);
@@ -233,6 +233,14 @@ export class FastImageSequence {
     });
   }
 
+  private get index(): number {
+    return this.wrapIndex(this.frame);
+  }
+
+  private get spread(): number {
+    return this.options.loop ? Math.floor(this.options.maxCachedImages / 2) : this.options.maxCachedImages;
+  }
+
   /**
    * Register a tick function to be called on every frame update.
    *
@@ -265,19 +273,18 @@ export class FastImageSequence {
   public async getFrameImage(index: number): Promise<HTMLImageElement | ImageBitmap> {
     const frame = this.frames[this.wrapIndex(index)] as Frame;
     try {
-        return await frame.fetchImage();
+      return await frame.fetchImage();
     } catch {
-        return await frame.fetchTarImage();
+      return await frame.fetchTarImage();
     }
   }
 
   /**
-   * Set the maximum number of images to cache.
-   * @param maxCache - The maximum number of images to cache.
+   * Register a callback function that is called with the progress of the loading.
+   * The function returns a promise that resolves when progress reaches 1.
    * @param onProgress - A callback function that is called with the progress of the loading.
    */
-  public setMaxCachedImages(maxCache: number, onProgress?: (progress: number) => void): Promise<boolean> {
-    this.options.maxCachedImages = clamp(maxCache, 1, this.options.frames);
+  public async onLoadProgress(onProgress?: (progress: number) => void): Promise<boolean> {
     let loadProgress = this.loadProgress;
     return new Promise((resolve) => {
       const checkProgress = () => {
@@ -293,6 +300,16 @@ export class FastImageSequence {
       };
       checkProgress();
     });
+  }
+
+  /**
+   * Set the maximum number of images to cache.
+   * @param maxCache - The maximum number of images to cache.
+   * @param onProgress - A callback function that is called with the progress of the loading.
+   */
+  public setMaxCachedImages(maxCache: number, onProgress?: (progress: number) => void): Promise<boolean> {
+    this.options.maxCachedImages = clamp(maxCache, 1, this.options.frames);
+    return this.onLoadProgress(onProgress);
   }
 
   /**
@@ -334,14 +351,6 @@ export class FastImageSequence {
   public setDisplayOptions(options: Partial<FastImageSequenceDisplayOptions>) {
     this.options = {...this.options, ...options};
     this.clearCanvas = true;
-  }
-
-  private get index(): number {
-    return this.wrapIndex(this.frame);
-  }
-
-  private get spread(): number {
-    return this.options.loop ? Math.floor(this.options.maxCachedImages / 2) : this.options.maxCachedImages;
   }
 
   private async loadResources() {
