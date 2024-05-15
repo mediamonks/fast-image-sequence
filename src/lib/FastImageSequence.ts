@@ -289,6 +289,9 @@ export class FastImageSequence {
     return new Promise((resolve) => {
       const checkProgress = () => {
         if (this.loadProgress >= 1) {
+          if (onProgress) {
+            onProgress(1);
+          }
           resolve(true);
         } else {
           if (onProgress && loadProgress !== this.loadProgress) {
