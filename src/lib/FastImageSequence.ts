@@ -195,12 +195,10 @@ export class FastImageSequence {
    * Get the current progress of the image sequence loading.
    */
   public get loadProgress(): number {
-    const {used, numLoaded, numLoading, maxLoaded} = this.getLoadStatus();
-    const {used: usedTar, numLoading: numLoadingTar, numLoaded: numLoadedTar, maxLoaded: maxLoadedTar, tarLoadProgress} = this.getTarStatus();
-    const imagesProgress = used ? Math.max(numLoaded - numLoading, 0) / maxLoaded : 0;
-    const tarProgress = usedTar ? Math.max(numLoadedTar - numLoadingTar, 0) / maxLoadedTar / 2 + tarLoadProgress / 2 : 0;
+    const {used, progress} = this.getLoadStatus();
+    const {used: usedTar, progress: tarProgress, tarLoadProgress} = this.getTarStatus();
 
-    return (imagesProgress + tarProgress) / ((used ? 1 : 0) + (usedTar ? 1 : 0));
+    return (progress + tarProgress / 2 + tarLoadProgress / 2) / ((used ? 1 : 0) + (usedTar ? 1 : 0));
   }
 
   /**
@@ -563,7 +561,7 @@ export class FastImageSequence {
     const numLoading = this.frames.filter(a => a.loading).length;
     const numLoaded = this.frames.filter(a => a.image !== undefined).length;
     const maxLoaded = this.options.maxCachedImages;
-    const progress = Math.max(0, numLoaded - numLoading) / maxLoaded;
+    const progress = Math.max(0, numLoaded - numLoading) / Math.max(1, maxLoaded);
     return {used, progress, numLoading, numLoaded, maxLoaded};
   }
 
@@ -574,7 +572,7 @@ export class FastImageSequence {
     const numLoaded = this.frames.filter(a => a.tarImage !== undefined).length;
     const maxLoaded = this.options.preloadAllTarImages ? this.frames.length : this.options.maxCachedImages;
     const tarLoadProgress = this.tarLoadProgress;
-    const progress = numLoaded / maxLoaded;
+    const progress = Math.max(0, numLoaded - numLoading) / Math.max(1, maxLoaded);
     return {used, tarLoaded, progress, numLoading, numLoaded, maxLoaded, tarLoadProgress};
   }
 
