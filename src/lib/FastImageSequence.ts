@@ -197,7 +197,10 @@ export class FastImageSequence {
   public get loadProgress(): number {
     const {used, numLoaded, numLoading, maxLoaded} = this.getLoadStatus();
     const {used: usedTar, numLoading: numLoadingTar, numLoaded: numLoadedTar, maxLoaded: maxLoadedTar, tarLoadProgress} = this.getTarStatus();
-    return ((used ? Math.max(numLoaded - numLoading, 0) : 0) + (usedTar ? (Math.max(numLoadedTar - numLoadingTar, 0) / 2 + tarLoadProgress) : 0)) / ((used ? maxLoaded : 0) + (usedTar ? (maxLoadedTar / 2 + 1) : 0));
+    const imagesProgress = used ? Math.max(numLoaded - numLoading, 0) / maxLoaded : 0;
+    const tarProgress = usedTar ? Math.max(numLoadedTar - numLoadingTar, 0) / maxLoadedTar / 2 + tarLoadProgress / 2 : 0;
+
+    return (imagesProgress + tarProgress) / ((used ? 1 : 0) + (usedTar ? 1 : 0));
   }
 
   /**
