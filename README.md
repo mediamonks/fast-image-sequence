@@ -163,6 +163,15 @@ sequence.getFrameImage(index);
 
 - `index` is the index of the frame to get the image from.
 
+### onLoadProgress(onProgress?: (progress: number) => void): Promise<void>
+
+Register a callback function that is called with the progress of the loading. The function returns a promise that resolves when progress reaches 1.
+
+```typescript
+sequence.onLoadProgress(onProgress);
+```
+
+
 ### setMaxCachedImages(maxCache: number, onProgress?: (progress: number) => void): Promise<void>
 
 This method sets the number of images that should be preloaded and cached in memory and returns a Promise that resolves when all these images are preloaded and cached.
