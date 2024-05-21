@@ -369,7 +369,7 @@ export class FastImageSequence {
       this.log('Poster image', this.options.poster);
       const posterImage = new Image();
       posterImage.src = this.options.poster;
-      posterImage.decode().then(() => this.drawImage(this.posterImage = posterImage)).catch((e) => this.log(e));
+      await posterImage.decode().then(() => this.drawImage(this.posterImage = posterImage)).catch((e) => this.log(e));
     }
     if (this.options.tarURL !== undefined) {
       // const response = await fetch(this.options.tarURL);
