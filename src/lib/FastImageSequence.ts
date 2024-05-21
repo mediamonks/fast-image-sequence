@@ -28,6 +28,7 @@ export type FastImageSequenceDisplayOptions = {
  * @property {'contain' | 'cover'} [objectFit='cover'] - How the image should be resized to fit the canvas.
  * @property {number} [horizontalAlign=0.5] - The horizontal alignment of the image.
  * @property {number} [verticalAlign=0.5] - The vertical alignment of the image.
+ * @property {string | undefined} [poster] - The URL of the poster image.
  * @property {boolean} [preloadAllTarImages=false] - Whether all images from the tar file should be preloaded.
  * @property {boolean} [useWorkerForTar=true] - Whether to use a worker for handling the tar file.
  * @property {boolean} [useWorkerForImage=!isMobile()] - Whether to use a worker for fetching images.
@@ -45,6 +46,7 @@ export type FastImageSequenceOptions = {
   tarImageURLCallback: ((index: number) => string) | undefined,
   loop: boolean;
   fillStyle: string;
+  poster: string | undefined;
   preloadAllTarImages: boolean;
   useWorkerForTar: boolean;
   useWorkerForImage: boolean;
@@ -57,23 +59,24 @@ export type FastImageSequenceOptions = {
 
 export class FastImageSequence {
   private static defaultOptions: Required<FastImageSequenceOptions> = {
-    frames:               1,
-    imageURLCallback:     undefined,
-    tarURL:               undefined,
-    tarImageURLCallback:  undefined,
-    loop:                 false,
-    fillStyle:            '#00000000',
-    objectFit:            'cover',
-    preloadAllTarImages:  false,
-    clearCanvas:          false, // clear canvas before drawing
-    useWorkerForTar:      true, // more latency, but less computation on main thread
-    useWorkerForImage:    !isMobile(), // less latency and memory usage, but more computation on main thread
+    frames: 1,
+    imageURLCallback: undefined,
+    tarURL: undefined,
+    tarImageURLCallback: undefined,
+    loop: false,
+    fillStyle: '#00000000',
+    objectFit: 'cover',
+    poster: undefined,
+    preloadAllTarImages: false,
+    clearCanvas: false, // clear canvas before drawing
+    useWorkerForTar: true, // more latency, but less computation on main thread
+    useWorkerForImage: !isMobile(), // less latency and memory usage, but more computation on main thread
     maxCachedImages: 32,
-    showDebugInfo:        false,
-    name:                 'FastImageSequence',
-    maxConnectionLimit:   4,
-    horizontalAlign:      0.5,
-    verticalAlign:        0.5,
+    showDebugInfo: false,
+    name: 'FastImageSequence',
+    maxConnectionLimit: 4,
+    horizontalAlign: 0.5,
+    verticalAlign: 0.5,
   };
   public canvas: HTMLCanvasElement;
   public options: Required<FastImageSequenceOptions>;
@@ -103,6 +106,7 @@ export class FastImageSequence {
   private initialized: boolean = false;
   private log: (...args: any[]) => void;
   private tarLoadProgress: number = 0;
+  private posterImage: HTMLImageElement | undefined;
 
   /**
    * Creates an instance of FastImageSequence.
@@ -143,6 +147,9 @@ export class FastImageSequence {
 
     this.resizeObserver = new ResizeObserver(() => {
       this.clearCanvas = true;
+      if (this.lastFrameDrawn < 0 && this.posterImage) {
+        this.drawImage(this.posterImage);
+      }
     });
     this.resizeObserver.observe(this.canvas);
 
@@ -174,7 +181,7 @@ export class FastImageSequence {
       }
 
       this.drawingLoop(-1);
-    });
+    }).catch(e => console.error(e));
   }
 
   /**
@@ -233,6 +240,14 @@ export class FastImageSequence {
     });
   }
 
+  private get index(): number {
+    return this.wrapIndex(this.frame);
+  }
+
+  private get spread(): number {
+    return this.options.loop ? Math.floor(this.options.maxCachedImages / 2) : this.options.maxCachedImages;
+  }
+
   /**
    * Register a tick function to be called on every frame update.
    *
@@ -265,9 +280,9 @@ export class FastImageSequence {
   public async getFrameImage(index: number): Promise<HTMLImageElement | ImageBitmap> {
     const frame = this.frames[this.wrapIndex(index)] as Frame;
     try {
-        return await frame.fetchImage();
+      return await frame.fetchImage();
     } catch {
-        return await frame.fetchTarImage();
+      return await frame.fetchTarImage();
     }
   }
 
@@ -336,15 +351,13 @@ export class FastImageSequence {
     this.clearCanvas = true;
   }
 
-  private get index(): number {
-    return this.wrapIndex(this.frame);
-  }
-
-  private get spread(): number {
-    return this.options.loop ? Math.floor(this.options.maxCachedImages / 2) : this.options.maxCachedImages;
-  }
-
   private async loadResources() {
+    if (this.options.poster) {
+      this.log('Poster image', this.options.poster);
+      const posterImage = new Image();
+      posterImage.src = this.options.poster;
+      posterImage.decode().then(() => this.drawImage(this.posterImage = posterImage)).catch((e) => this.log(e));
+    }
     if (this.options.tarURL !== undefined) {
       // const response = await fetch(this.options.tarURL);
       // const blob = await response.blob();
@@ -447,6 +460,10 @@ export class FastImageSequence {
 
     this.lastFrameDrawn = frame.index;
 
+    this.drawImage(image);
+  }
+
+  private drawImage(image: HTMLImageElement | ImageBitmap) {
     const containerAspect = this.container.offsetWidth / this.container.offsetHeight;
     const imageAspect = image.width / image.height;
 

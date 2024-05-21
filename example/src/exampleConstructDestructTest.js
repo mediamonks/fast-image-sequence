@@ -13,11 +13,12 @@ export function constructDestructTest(container) {
 }
 
 function createFastImageSequence(container) {
+    const mode = (Math.random() * 3) | 0;
     const fastImageSequence = new FastImageSequence(container, {
         name: 'ConstructDestructTest',
         frames: 89,
-        imageURLCallback: (i) => `${('' + (i + 1)).padStart(4, '0')}.webp`,
-        tarURL: (Math.random() > .5 ? 'lowrespreviews.tar' : undefined),
+        imageURLCallback: mode === 2 ? undefined : (i) => `${('' + (i + 1)).padStart(4, '0')}.webp`,
+        tarURL: mode >= 1 ? 'lowrespreviews.tar' : undefined,
         tarImageURLCallback: (i) => `${('' + (i + 1)).padStart(4, '0')}.jpg`,
 
         // optional arguments:
@@ -26,9 +27,10 @@ function createFastImageSequence(container) {
         fillStyle: '#00000000', // default #00000000
         preloadAllTarImages: Math.random() > .5,
         useWorkerForTar: Math.random() > .5, // default true
-        maxCachedImages: (1+Math.random()*32)|0, // default 32
+        maxCachedImages: (1 + Math.random() * 32) | 0, // default 32
         clearCanvas: Math.random() > .5, // default false
         showDebugInfo: true,
+        poster: '0001.webp',
     });
 
     fastImageSequence.ready.then(() => {

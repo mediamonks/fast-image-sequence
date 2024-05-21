@@ -72,7 +72,7 @@ By setting callbacks for URLs and loading the tar file yourself, you can set dif
 - **horizontalAlign**: `number` - Horizontal alignment of the image. Default: `0.5`
 - **verticalAlign**: `number` - Vertical alignment of the image. Default: `0.5`
 
- 
+- **poster**: `string | undefined` - URL of the poster image. Optional. 
 - **fillStyle**: `string` - Fill style of the canvas. Default: `'#00000000'`
 - **preloadAllTarImages**: `boolean` - Preload all images from the tar file. Default: `false`
 - **useWorkerForTar**: `boolean` - Use a worker for handling the tar file. Default: `true`
