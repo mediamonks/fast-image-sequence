@@ -52,8 +52,8 @@ you to dynamically generate the URLs of your images based on their index in the 
 ### Loading images from a tar file
 
 If you want, you can load images from a tar file. This can be useful when you want to preload all images at once with
-minimal memory usage. You can use a tar file by setting the `tarURL` option. You also need to set the imageURL, which
-returns a string representing the URL of the image at an index in the tar file.
+minimal memory usage. You can use a tar file by setting the `tarURL` option. You also need to set the `imageURL`, which
+returns a string representing the image's URL at an index in the tar file.
 
 ```ts
 const options = {
