@@ -75,7 +75,7 @@ different sources, such as a tar file and an image URL. You can set an array of 
 Each ImageSourceOptions object can have its imageURL and tarURL. 
 
 The FastImageSequence class will try to load images from the first source in the array. If an image is not available yet, it will try to load it from the next source in the
-array.
+array, etc. Finally, the best matching available image will be rendered.
 
 ```ts
 import {FastImageSequence} from '@mediamonks/fast-image-sequence';
