@@ -126,7 +126,7 @@ Note that you can store a subset of the images (all even images, for example) in
 - **showDebugInfo**: `boolean` - Show debug info. Default: `false`
 - **name**: `string` - Name of the FastImageSequence instance. Default: `'FastImageSequence'`
 
-### Available options for ImageSourceOptions
+### Available options for an ImageSource
 
 - **imageURL**: `(index: number) => string` - Callback returning the URL of an image given its index.
 - **tarURL**: `string | undefined` - URL of the tar file containing images. Optional.
