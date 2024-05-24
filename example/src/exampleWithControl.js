@@ -17,6 +17,7 @@ export async function initExampleWithControl(container) {
                 tarURL: 'lowrespreviews.tar',
                 imageURL: (i) => `${('' + (i + 1)).padStart(4, '0')}.jpg`,
                 maxCachedImages: 89,
+                useWorker: true,
             }
         ],
         // optional arguments:
@@ -27,7 +28,7 @@ export async function initExampleWithControl(container) {
         showDebugInfo: true,
     });
 
-    await fastImageSequence.ready;
+    await fastImageSequence.ready();
 
     fastImageSequence.progress = 0;
 

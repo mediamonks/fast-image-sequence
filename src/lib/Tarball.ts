@@ -19,8 +19,8 @@ export default class Tarball {
   private resolve: (((bm: ImageBitmap) => void) | undefined)[] = [];
 
   private defaultOptions: TarballOptions = {
-    useWorker: true
-  }
+    useWorker: true,
+  };
 
   constructor(buffer: ArrayBuffer, options: Partial<TarballOptions> = {}) {
     this.buffer = buffer;
@@ -37,7 +37,7 @@ export default class Tarball {
 
       this.fileInfo.push({
         name, size,
-        header_offset: offset
+        header_offset: offset,
       });
 
       offset += (512 + 512 * Math.trunc(size / 512));
@@ -64,7 +64,7 @@ export default class Tarball {
           // @ts-ignore
           this.worker.postMessage({cmd: 'load', offset: info.header_offset + 512, size: info.size, index});
         } else {
-          reject();
+          reject('Image already loading from tar');
         }
       });
     } else {
@@ -87,6 +87,13 @@ export default class Tarball {
     }
   }
 
+  public destruct() {
+    if (this.worker) {
+      this.worker.terminate();
+    }
+    this.resolve = [];
+  }
+
   private readFileName(str_offset: number) {
     const strView = new Uint8Array(this.buffer, str_offset, 100);
     const i = strView.indexOf(0);
@@ -103,6 +110,9 @@ export default class Tarball {
     return parseInt(szStr, 8);
   }
 
+
+  // worker functionality
+
   private getBlob(file_name: string, mimetype: string = '') {
     const info = this.getInfo(file_name);
     if (info) {
@@ -110,9 +120,6 @@ export default class Tarball {
       return new Blob([view], {"type": mimetype});
     }
   }
-
-
-  // worker functionality
 
   private createWorker() {
     const tarballWorkerBlob = new Blob([tarballWorkerSource], {type: 'application/javascript'});

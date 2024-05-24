@@ -1,6 +1,7 @@
 import Frame from "./Frame.js";
 import {createLogElement, logToScreen} from "./LogToScreen.js";
 import ImageSource, {type ImageSourceOptions, INPUT_SRC} from "./ImageSource.js";
+import ImageSourceTar from "./ImageSourceTar.js";
 
 export function isMobile(): boolean {
   return (typeof navigator !== "undefined" && /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent));
@@ -22,7 +23,7 @@ export type FastImageSequenceDisplayOptions = {
  * This type represents the options for the FastImageSequence class.
  *
  * @property {number} frames - The number of frames in the image sequence.
- * @property {ImageSourceOptions[]} src - An array of image source options.
+ * @property {ImageSourceOptions[] | ImageSourceOptions} src - The source of the images for the FastImageSequence class. It can either be an array of ImageSourceOptions or a single ImageSourceOptions instance.
  * @property {boolean} [loop=false] - Whether the sequence should loop back to the start when it reaches the end.
  * @property {string | undefined} [poster] - The URL of the poster image to be displayed before the sequence loads.
  * @property {string} [fillStyle='#00000000'] - The fill style of the canvas. This is a color in any valid CSS color format.
@@ -35,7 +36,7 @@ export type FastImageSequenceDisplayOptions = {
  */
 export type FastImageSequenceOptions = {
   frames: number,
-  src: ImageSourceOptions[],
+  src: ImageSourceOptions[] | ImageSourceOptions,
 } & Partial<{
   loop: boolean;
   poster: string | undefined;
@@ -141,7 +142,14 @@ export class FastImageSequence {
     };
 
     // init all input sources
-    this.sources = this.options.src.map((src, index) => new ImageSource(this, index, src));
+    const sources = this.options.src instanceof Array ? this.options.src : [this.options.src];
+    this.sources = sources.map((src, index) => {
+      if (src.tarURL !== undefined) {
+        return new ImageSourceTar(this, index, src);
+      } else {
+        return new ImageSource(this, index, src);
+      }
+    });
 
     this.loadResources().then(() => {
       this.initialized = true;
@@ -197,13 +205,13 @@ export class FastImageSequence {
   }
 
   /**
-   * Get a promise that resolves when the image sequence is ready to play.
+   * Returns a promise that resolves when the image sequence is ready to play.
    */
-  public get ready(): Promise<void> {
+  public ready(): Promise<void> {
     // check if the sequence is initialized
     return new Promise((resolve) => {
       const checkInitialized = () => {
-        if (this.lastFrameDrawn !== -1) {
+        if (this.sources.every(source => source.initialized)) {
           resolve();
         } else {
           setTimeout(checkInitialized, 16);
@@ -211,6 +219,14 @@ export class FastImageSequence {
       };
       checkInitialized();
     });
+  }
+
+  /**
+   * Get the first ImageSource from the sources array.
+   * @returns {ImageSource} - The first ImageSource object in the sources array.
+   */
+  public get src() {
+    return this.sources[0] as ImageSource;
   }
 
   private get index(): number {
@@ -298,6 +314,7 @@ export class FastImageSequence {
       this.logElement = undefined;
     }
     this.canvas.replaceWith(this.canvas.cloneNode(true));
+    this.sources.forEach(source => source.destruct());
     this.frames.forEach(frame => frame.releaseImage());
   }
 
@@ -464,7 +481,7 @@ export class FastImageSequence {
 
     for (const source of this.sources) {
       const {progress, numLoading, numLoaded, maxLoaded} = source.getLoadStatus();
-      debugInfo += `- ${source.type === INPUT_SRC ? `image` : `  tar`} ${formatPercentage(progress)}, numLoading: ${numLoading}, numLoaded: ${numLoaded}/${maxLoaded}${source.options.useWorker?', use worker':''}\n`;
+      debugInfo += `- ${source.type === INPUT_SRC ? `image` : `  tar`} ${formatPercentage(progress)}, numLoading: ${numLoading}, numLoaded: ${numLoaded}/${maxLoaded}${source.options.useWorker ? ', use worker' : ''}\n`;
     }
     logToScreen(output, debugInfo);
   }

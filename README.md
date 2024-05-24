@@ -23,24 +23,16 @@ npm i @mediamonks/fast-image-sequence
 
 Creating a FastImageSequence instance and playing an image sequence.
 ```ts
-import { FastImageSequence } from '@mediamonks/fast-image-sequence';
+import {FastImageSequence} from '@mediamonks/fast-image-sequence';
 
 const options = {
-    frames: 100,
+   frames: 100,
 
-    // You can directly load images from an image URL
-    imageURLCallback: (index) => `path/to/your/image/sequence/image${index}.jpg`,
-    
-    // Or you can load images from a tar file
-    tarURL: 'path/to/your/tar/file.tar',
-    tarImageURLCallback: (index) => `image${index}.jpg`,
-
-    // Note that you can also simultaneously use direct image loading and image loading from a tar file. 
-    // In that case, you will use the tar file to serve (super low res) preview images shown before the
-    // direct image loading completes.
-
-    loop: true,
-    objectFit: 'cover',
+   src:       {
+      imageURL: (index) => `path/to/your/image/sequence/image${index}.jpg`,
+   },
+   loop:      true,
+   objectFit: 'cover',
 };
 
 const sequence = new FastImageSequence(containerElement, options);
@@ -53,20 +45,42 @@ The imageURLCallback and tarImageURLCallback are functions that take an index as
 
 In the case of a large image sequence, the normal usage of this library involves having a tar file with low-resolution preview images. These will be used when you randomly seek or jump in the sequence or when the internet speed is low. However, you are free to fine-tune it as you please. For example, you can also use a tar file with high-resolution images and don't set an imageURLCallback. This way, all images will be served from the tar file, reducing the number of requests and speeding up the loading time.  
 
+```ts
+import {FastImageSequence} from '@mediamonks/fast-image-sequence';
+
+const options = {
+   frames: 100,
+
+   src: [
+      {
+         // First try to display a highres image from an image URL
+         imageURL:        (index) => `path/to/your/image/sequence/highres_image${index}.jpg`,
+         maxCachedImages: 16,
+      },
+      {
+         // Fallback if highres image is not loaded yet, server low res image from a tar file
+         tarURL:          'path/to/your/tar/file.tar',
+         imageURL:        (index) => `lowres_image${index}.jpg`,
+         maxCachedImages: 32,
+      },
+   ],
+
+   loop:      false,
+   objectFit: 'contain',
+};
+
+const sequence = new FastImageSequence(containerElement, options);
+sequence.play();
+```
+
+
 By setting callbacks for URLs and loading the tar file yourself, you can set different functions for different devices and/or different supported image file formats. This allows you to optimize the image sequence for your specific project needs.
 
 ### Available options for FastImageSequence
 
 - **frames**: `number` - Number of frames in the sequence. Required.
-- **imageURLCallback**: `((index: number) => string) | undefined` - Callback returning the URL of an image given its index. Optional.
-- **tarURL**: `string | undefined` - URL of the tar file containing images. Optional.
-- **tarImageURLCallback**: `((index: number) => string) | undefined` - Callback returning the URL of an image in the tar file given its index. Optional.
-
-
+- **src**: `ImageSourceOptions[] | ImageSourceOptions` The source of the images for the FastImageSequence class. It can either be an array of ImageSourceOptions or a single ImageSourceOptions instance.
 - **loop**: `boolean` - Whether the sequence should loop. Default: `false`
-- **maxConnectionLimit**: `number` - Maximum number of concurrent connections for fetching images. Default: `4`
-- **maxCachedImages**: `number` - Number of images to cache. Default: `32`
-
 
 - **objectFit**: `'contain' | 'cover'` - How the image should fit the canvas. Default: `'cover'`
 - **horizontalAlign**: `number` - Horizontal alignment of the image. Default: `0.5`
@@ -74,12 +88,17 @@ By setting callbacks for URLs and loading the tar file yourself, you can set dif
 
 - **poster**: `string | undefined` - URL of the poster image. Optional. 
 - **fillStyle**: `string` - Fill style of the canvas. Default: `'#00000000'`
-- **preloadAllTarImages**: `boolean` - Preload all images from the tar file. Default: `false`
-- **useWorkerForTar**: `boolean` - Use a worker for handling the tar file. Default: `true`
-- **useWorkerForImage**: `boolean` - Use a worker for fetching images. Default: `!isMobile()`
 - **clearCanvas**: `boolean` - Clear the canvas before drawing. Default: `false`
 - **showDebugInfo**: `boolean` - Show debug info. Default: `false`
 - **name**: `string` - Name of the FastImageSequence instance. Default: `'FastImageSequence'`
+
+### Available options for ImageSourceOptions
+
+- **imageURL**: `((index: number) => string) | undefined` - Callback returning the URL of an image given its index.
+- **tarURL**: `string | undefined` - URL of the tar file containing images. Optional.
+- **useWorker**: `boolean` - Use a worker for fetching images. Default: `!isMobile()`
+- **maxConnectionLimit**: `number` - Maximum number of concurrent connections for fetching images. Default: `4`
+- **maxCachedImages**: `number` - Number of images to cache. Default: `32`
 
 ## Methods
 

@@ -49,7 +49,7 @@ function createFastImageSequence(container) {
         poster: '0001.webp',
     });
 
-    fastImageSequence.ready.then(() => {
+    fastImageSequence.ready().then(() => {
         fastImageSequence.tick(() => fastImageSequence.progress = Math.random());
     });
 

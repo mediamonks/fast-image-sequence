@@ -4,9 +4,9 @@ export async function initExamplePlayBackwards(container) {
     const fastImageSequence = new FastImageSequence(container, {
         name: 'PlayBackwardsTest at 200fps',
         frames: 89,
-        src: [{
+        src: {
             imageURL: (i) => `${('' + (i + 1)).padStart(4, '0')}.webp`,
-        }],
+        },
         // optional arguments:
         loop: true, // default false
         objectFit: 'cover', // default 'cover'
@@ -15,7 +15,7 @@ export async function initExamplePlayBackwards(container) {
         showDebugInfo: true,
     });
 
-    await fastImageSequence.ready;
+    await fastImageSequence.ready();
 
     fastImageSequence.progress = 0;
 
