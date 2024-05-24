@@ -45,9 +45,7 @@ sequence.play();
 ```
 
 In the options object, you must set the numbers of `frames` and an `imageURL`. The `imageURL` is a function that
-takes an
-index as a parameter and returns a string representing the URL of the image at that index in the sequence. This allows
-you to dynamically generate the URLs of your images based on their index in the sequence.
+takes an index as a parameter and returns a string representing the URL of the image at that index in the sequence.
 
 ### Loading images from a tar file
 
