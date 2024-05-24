@@ -32,10 +32,10 @@ import {FastImageSequence} from '@mediamonks/fast-image-sequence';
 
 const options = {
   frames: 100,
-
-  src:       {
+  src:    {
     imageURL: (index) => `path/to/your/image/sequence/image${index}.jpg`,
   },
+
   loop:      true,
   objectFit: 'cover',
 };
@@ -58,11 +58,11 @@ returns a string representing the URL of the image at an index in the tar file.
 ```ts
 const options = {
   frames: 100,
-
-  src:       {
+  src:    {
     tarURL:   'path/to/your/tar/file.tar',
     imageURL: (index) => `image${index}.jpg`,
   },
+
   loop:      true,
   objectFit: 'cover',
 };
