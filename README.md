@@ -227,7 +227,7 @@ sequence.onLoadProgress(onProgress);
 
 ### sources[index:number].setMaxCachedImages(maxCache: number, onProgress?: (progress: number) => void): Promise<void>
 
-This method sets the number of images that should be preloaded and cached in memory for a input source and returns a
+This method sets the number of images that should be preloaded and cached in memory for an input source and returns a
 Promise that resolves when all these images are preloaded and cached.
 
 ```typescript
