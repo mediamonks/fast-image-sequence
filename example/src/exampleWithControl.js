@@ -1,4 +1,4 @@
-import { FastImageSequence } from '../../src/index';
+import {FastImageSequence} from '../../src/index';
 
 const prevButton = document.getElementById('prev-button');
 const nextButton = document.getElementById('next-button');
@@ -8,17 +8,21 @@ export async function initExampleWithControl(container) {
     const fastImageSequence = new FastImageSequence(container, {
         name: 'PlayWithControlTest',
         frames: 89,
-        imageURLCallback: (i) => `${('' + (i+1)).padStart(4, '0')}.webp`,
-        tarURL: 'lowrespreviews.tar',
-        tarImageURLCallback: (i) => `${('' + (i+1)).padStart(4, '0')}.jpg`,
-
+        src: [
+            {
+                imageURL: (i) => `${('' + (i + 1)).padStart(4, '0')}.webp`,
+                maxCachedImages: 32, // default 32
+            },
+            {
+                tarURL: 'lowrespreviews.tar',
+                imageURL: (i) => `${('' + (i + 1)).padStart(4, '0')}.jpg`,
+                maxCachedImages: 89,
+            }
+        ],
         // optional arguments:
         loop: true, // default false
         objectFit: 'contain', // default 'cover'
         fillStyle: '#00000000', // default #00000000
-        preloadAllTarImages: false,
-        useWorkerForTar: true, // default true
-        maxCachedImages: 32, // default 32
         clearCanvas: false, // default false
         showDebugInfo: true,
     });

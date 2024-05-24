@@ -1,6 +1,6 @@
-import imageWorkerSource from './ImageFetchWorker.worker.js?raw';
+import imageWorkerSource from './ImageFetch.worker.js?raw';
 
-export class ImageFetchWorker {
+export class ImageFetch {
   public index: number = -1e10;
 
   private worker: Worker;
@@ -37,16 +37,16 @@ export class ImageFetchWorker {
 
 // pool of workers
 
-const workerPool: ImageFetchWorker[] = [];
+const workerPool: ImageFetch[] = [];
 
-export function getImageFetchWorker(): ImageFetchWorker {
+export function getImageFetchWorker(): ImageFetch {
   if (workerPool.length === 0) {
-    workerPool.push(new ImageFetchWorker());
+    workerPool.push(new ImageFetch());
   }
-  return workerPool.shift() as ImageFetchWorker;
+  return workerPool.shift() as ImageFetch;
 }
 
-export function releaseImageFetchWorker(worker: ImageFetchWorker) {
+export function releaseImageFetchWorker(worker: ImageFetch) {
   worker.abort();
   workerPool.push(worker);
 }

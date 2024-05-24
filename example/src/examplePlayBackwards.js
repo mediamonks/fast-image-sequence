@@ -1,20 +1,16 @@
-import { FastImageSequence } from '../../src/index';
+import {FastImageSequence} from '../../src/index';
 
 export async function initExamplePlayBackwards(container) {
     const fastImageSequence = new FastImageSequence(container, {
         name: 'PlayBackwardsTest at 200fps',
         frames: 89,
-        imageURLCallback: (i) => `${('' + (i + 1)).padStart(4, '0')}.webp`,
-        // tarURL: 'lowrespreviews.tar',
-        // tarImageURLCallback: (i) => `${('' + (i+1)).padStart(4, '0')}.jpg`,
-
+        src: [{
+            imageURL: (i) => `${('' + (i + 1)).padStart(4, '0')}.webp`,
+        }],
         // optional arguments:
         loop: true, // default false
         objectFit: 'cover', // default 'cover'
         fillStyle: '#00000000', // default #00000000
-        preloadAllTarImages: false,
-        useWorkerForTar: true, // default true
-        maxCachedImages: 32, // default 32
         clearCanvas: false, // default false
         showDebugInfo: true,
     });
