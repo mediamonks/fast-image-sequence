@@ -44,7 +44,7 @@ const sequence = new FastImageSequence(containerElement, options);
 sequence.play();
 ```
 
-In the options object, you need to set the numbers of `frames` and an `imageURL`. The `imageURL` is a function that
+In the options object, you must set the numbers of `frames` and an `imageURL`. The `imageURL` is a function that
 takes an
 index as a parameter and returns a string representing the URL of the image at that index in the sequence. This allows
 you to dynamically generate the URLs of your images based on their index in the sequence.
@@ -52,7 +52,7 @@ you to dynamically generate the URLs of your images based on their index in the 
 ### Loading images from a tar file
 
 If you want, you can load images from a tar file. This can be useful when you want to preload all images at once with
-minimal memory usage. You can use a tar file by setting the `tarURL` option. You also need to set the imageURL, that
+minimal memory usage. You can use a tar file by setting the `tarURL` option. You also need to set the imageURL, which
 returns a string representing the URL of the image at an index in the tar file.
 
 ```ts
@@ -72,7 +72,7 @@ const options = {
 
 You can also set multiple sources for the FastImageSequence class. This can be useful when you want to load images from
 different sources, such as a tar file and an image URL. You can set an array of ImageSourceOptions in the src option.
-Each ImageSourceOptions object can have its own imageURL and tarURL. The FastImageSequence class will try to load images
+Each ImageSourceOptions object can have its imageURL and tarURL. The FastImageSequence class will try to load images
 from the first source in the array. If an image is not available yet, it will try to load it from the next source in the
 array.
 
@@ -104,10 +104,9 @@ const sequence = new FastImageSequence(containerElement, options);
 sequence.play();
 ```
 
-The example above can be useful when you have a large image sequence with high-resolution images, or if the user can
-randomly jump to any frame in the sequence and you want to have a fast response time.
-Note that you can store a subset of the images (all even images, for example) in the tar file. The fast-image-sequence
-will automatically fall back to the best matching frame when rendering a frame.
+The example above can be useful when you have a large image sequence with high-resolution images or if the user can randomly jump to any frame in the sequence and you want a fast response time.
+
+Note that you can store a subset of the images (all even images, for example) in the tar file. The fast-image-sequence will automatically fall back to the best matching available image when rendering a frame.
 
 ### Available options for FastImageSequence
 
