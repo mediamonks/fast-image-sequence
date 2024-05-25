@@ -69,8 +69,8 @@ const options = {
 ### Advanced usage
 
 You can also set multiple sources for the FastImageSequence class. This can be useful when you want to load images from
-different sources, such as a tar file and an image URL. You can set an array of ImageSourceOptions in the src option.
-Each ImageSourceOptions object can have its imageURL and tarURL. 
+different sources, such as a tar file *and* an image URL. You can set an array of ImageSource in the src option.
+Each ImageSource can have its imageURL and tarURL. 
 
 The FastImageSequence class will try to load images from the first source in the array. If an image is not available yet, it will try to load it from the next source in the
 array, etc. Finally, the best matching available image will be rendered.
