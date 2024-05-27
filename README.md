@@ -279,6 +279,55 @@ To create a tarball with images, you can follow these steps:
 Once you have your tarball, you can use it with `FastImageSequence` by setting the `tarURL` option to the URL of your
 tarball and implementing the `tarImageURLCallback` to return the URL of an image in the tarball given its index.
 
+## Frequently Asked Questions
+
+### How can I create a tar file (tarball) with images?
+
+I created an easy-to-use online tool for this: [Tar File Creator](https://reindernijhoff.net/tools/tar/). Drag and drop your selection of images onto the page, and a tar file will be generated that you can download.
+You can also use a tar tool to create the tar file yourself. 
+
+### I want to download just 8 frames first, and preload the rest of the images later. How can I do this?
+
+You can set the `maxCachedImages` option to 8. The FastImageSequence will only preload and cache the first 8 images. You can then set the `maxCachedImages` option to a higher number to preload the rest of the images later.
+See this [example](https://github.com/mediamonks/fast-image-sequence/blob/main/example/src/exampleStillImage.js) for more information.
+
+### I have an image sequence of low-res images, and want to download a high-res image when the user stops at a frame. How can I do this?
+
+You can do this by setting multiple sources in the `src` option. The FastImageSequence will try to load images from the first source in the array. If an image is not available yet, it will try to load it from the next source in the array, etc. Finally, the best matching available image will be rendered.
+By setting a `timeout` option, you can control when the FastImageSequence should start loading an image. For example:
+
+```ts
+const options = {
+  frames: 100,
+
+  src: [
+    {
+      // First try to display a highres image from an image URL
+      imageURL:        (index) => `path/to/your/image/sequence/highres_image${index}.jpg`,
+      maxCachedImages: 1,
+      timeout:         16, // only start loading an image if the same frame is visible for 16ms
+    },
+    {
+      // Default: serve a low res image from the sequence
+      imageURL:        (index) => `path/to/your/image/sequence/lowres_image${index}.jpg`,
+      maxCachedImages: 32,
+    },
+  ],
+
+  loop:      false,
+  objectFit: 'contain',
+};
+
+const sequence = new FastImageSequence(containerElement, options);
+
+```
+
+### Can I download a tar file myself an use it with FastImageSequence?
+
+Yes, just download the tar file yourself, and create a data URL from it. You can then use this data URL as the `tarURL` option. 
+See this [example](https://github.com/mediamonks/fast-image-sequence/blob/main/example/src/exampleLoadTar.js) for more information.
+
+
 ## Building
 
 To build fast-image-sequence, ensure that you have [Git](http://git-scm.com/downloads)
