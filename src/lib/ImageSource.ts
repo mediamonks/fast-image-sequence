@@ -15,10 +15,10 @@ export type ImageSourceType = typeof INPUT_SRC | typeof INPUT_TAR;
  * @property {string | undefined} tarURL - The URL of the tar file containing the images for the sequence.
  * @property {boolean} useWorker - Whether to use a worker for fetching images.
  * @property {number} maxCachedImages - The number of images to cache.
- * @property {number} maxConnectionLimit - The maximum number of images to load at once.
+ * @property {number} maxConnectionLimit - The maximum number of images to load simultaneously.
  * @property {((index: number) => boolean) | undefined} available - A callback function that returns if an image is available given its index.
  * @property {((index: number) => Promise<CanvasImageSource>) | undefined} image - A callback function that returns the image element given its index.
- * @property {number} timeout - Only start loading an image if the same frame is visible for this amount of time (in milliseconds).
+ * @property {number} timeout - Only start loading an image if the same frame is visible for this time (in milliseconds).
  */
 export type ImageSourceOptions = {
   imageURL: ((index: number) => string) | undefined,
