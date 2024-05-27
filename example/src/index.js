@@ -6,6 +6,7 @@ import {initExampleLoadTar} from "./exampleLoadTar.js";
 
 initExampleWithControl(document.getElementsByClassName('grid-item')[0]);
 initExamplePlayBackwards(document.getElementsByClassName('grid-item')[1]);
-initExampleStillImage(document.getElementsByClassName('grid-item')[2]);
-constructDestructTest(document.getElementsByClassName('grid-item')[3]);
+
+initExampleStillImage(document.getElementsByClassName('grid-item')[3]);
 initExampleLoadTar(document.getElementsByClassName('grid-item')[4]);
+constructDestructTest(document.getElementsByClassName('grid-item')[5]);

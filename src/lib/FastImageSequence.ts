@@ -472,7 +472,7 @@ export class FastImageSequence {
   private process(dt: number) {
     for (const source of this.sources) {
       this.setLoadingPriority();
-      source.process();
+      source.process(() => this.setLoadingPriority());
     }
   }
 

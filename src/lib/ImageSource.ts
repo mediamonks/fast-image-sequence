@@ -16,6 +16,7 @@ export type ImageSourceType = typeof INPUT_SRC | typeof INPUT_TAR;
  * @property {boolean} useWorker - Whether to use a worker for fetching images.
  * @property {number} maxCachedImages - The number of images to cache.
  * @property {number} maxConnectionLimit - The maximum number of images to load at once.
+ * @property {((index: number) => boolean) | undefined} available - A callback function that returns if an image is available given its index.
  */
 export type ImageSourceOptions = {
   imageURL: ((index: number) => string) | undefined,
@@ -23,6 +24,7 @@ export type ImageSourceOptions = {
   useWorker: boolean;
   maxCachedImages: number,
   maxConnectionLimit: number,
+  available: ((index: number) => boolean) | undefined,
 }
 
 export default class ImageSource {
@@ -32,6 +34,7 @@ export default class ImageSource {
     useWorker:          !isMobile(),
     maxCachedImages:    32,
     maxConnectionLimit: 4,
+    available:          undefined,
   };
 
   public options: ImageSourceOptions;
@@ -72,25 +75,29 @@ export default class ImageSource {
   }
 
   public async loadResources() {
+    for (const image of this.images) {
+      image.available = this.available(image, image.available);
+    }
     if (!this.images[0]?.available) {
       throw new Error(`No image available for index 0 in ImageSource${this.index} (${this.images[0]?.imageURL})`);
     }
 
-    this.setMaxCachedImages(this.options.maxCachedImages);
     this.initialized = true;
+    this.setMaxCachedImages(this.options.maxCachedImages);
   }
 
-  public process() {
+  public process(setLoadingPriority: () => void) {
     let {numLoading, numLoaded} = this.getLoadStatus();
     const maxConnectionLimit = this.options.maxConnectionLimit;
-    const imagesToLoad = this.images.filter(a => a.image === undefined && !a.loading && a.frame.priority).sort((a, b) => a.frame.priority - b.frame.priority);
-    const loadedImages = this.images.filter(a => a.image !== undefined && !a.loading).sort((a, b) => b.frame.priority - a.frame.priority);
+    const imagesToLoad = this.images.filter(a => a.available && a.image === undefined && !a.loading && a.frame.priority).sort((a, b) => a.frame.priority - b.frame.priority);
+    const loadedImages = this.images.filter(a => a.available && a.image !== undefined && !a.loading).sort((a, b) => b.frame.priority - a.frame.priority);
     const maxLoadedPriority = loadedImages.shift()?.frame.priority ?? 1e10;
 
     while (numLoading < maxConnectionLimit && imagesToLoad.length > 0) {
       const image = imagesToLoad.shift() as ImageElement;
       if (image.frame.priority < maxLoadedPriority || numLoaded < this.options.maxCachedImages - numLoading) {
         image.fetchImage().then(() => {
+          setLoadingPriority();
           this.releaseImageWithLowestPriority();
         }).catch((e) => {
           console.error(e);
@@ -118,8 +125,11 @@ export default class ImageSource {
     this.images.forEach(image => image.reset());
   }
 
+  protected available(image: ImageElement, available: boolean = true): boolean {
+    return this.options.available ? available && this.options.available(image.frame.index) : available;
+  }
+
   private releaseImageWithLowestPriority() {
-    this.context.setLoadingPriority();
     const loadedImages = this.images.filter(a => a.image !== undefined && !a.loading);
     if (loadedImages.length > this.options.maxCachedImages) {
       const sortedFrame = loadedImages.sort((a, b) => a.frame.priority - b.frame.priority).pop();

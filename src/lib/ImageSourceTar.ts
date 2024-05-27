@@ -56,4 +56,9 @@ export default class ImageSourceTar extends ImageSource {
     this.tarball?.destruct();
     this.tarball = undefined;
   }
+
+  protected override available(image: ImageElement, available: boolean = true): boolean {
+    available = available && image.imageURL !== undefined && this.tarball?.getInfo(image.imageURL) !== undefined;
+    return super.available(image, available);
+  }
 }
