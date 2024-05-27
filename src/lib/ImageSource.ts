@@ -17,6 +17,7 @@ export type ImageSourceType = typeof INPUT_SRC | typeof INPUT_TAR;
  * @property {number} maxCachedImages - The number of images to cache.
  * @property {number} maxConnectionLimit - The maximum number of images to load at once.
  * @property {((index: number) => boolean) | undefined} available - A callback function that returns if an image is available given its index.
+ * @property {((index: number) => CanvasImageSource) | undefined} image - A callback function that returns the image element given its index.
  */
 export type ImageSourceOptions = {
   imageURL: ((index: number) => string) | undefined,
@@ -25,6 +26,7 @@ export type ImageSourceOptions = {
   maxCachedImages: number,
   maxConnectionLimit: number,
   available: ((index: number) => boolean) | undefined,
+  image: ((index: number) => Promise<CanvasImageSource>) | undefined,
 }
 
 export default class ImageSource {
@@ -35,6 +37,7 @@ export default class ImageSource {
     maxCachedImages:    32,
     maxConnectionLimit: 4,
     available:          undefined,
+    image:              undefined,
   };
 
   public options: ImageSourceOptions;
@@ -96,10 +99,16 @@ export default class ImageSource {
     while (numLoading < maxConnectionLimit && imagesToLoad.length > 0) {
       const image = imagesToLoad.shift() as ImageElement;
       if (image.frame.priority < maxLoadedPriority || numLoaded < this.options.maxCachedImages - numLoading) {
-        image.fetchImage().then(() => {
-          setLoadingPriority();
-          this.releaseImageWithLowestPriority();
+        image.loading = true;
+        this.fetchImage(image).then((imageElement) => {
+          if (image.loading) {
+            image.loading = false;
+            image.image = imageElement;
+            setLoadingPriority();
+            this.releaseImageWithLowestPriority();
+          }
         }).catch((e) => {
+          image.reset();
           console.error(e);
         });
       }
@@ -115,10 +124,14 @@ export default class ImageSource {
     return {progress, numLoading, numLoaded, maxLoaded};
   }
 
-  public async fetchImage(imageElement: ImageElement) {
-    return new Promise<ImageBitmap | HTMLImageElement>((resolve, reject) => {
-      reject('Not implemented');
-    });
+  public async fetchImage(imageElement: ImageElement): Promise<CanvasImageSource> {
+    if (this.options.image) {
+      return this.options.image(imageElement.frame.index);
+    } else {
+      return new Promise<CanvasImageSource>((resolve, reject) => {
+        reject('Not implemented');
+      });
+    }
   }
 
   public destruct() {
@@ -134,7 +147,6 @@ export default class ImageSource {
     if (loadedImages.length > this.options.maxCachedImages) {
       const sortedFrame = loadedImages.sort((a, b) => a.frame.priority - b.frame.priority).pop();
       if (sortedFrame) {
-        // console.log('release image for frame', sortedFrame.index);
         sortedFrame.releaseImage();
       }
     }

@@ -13,10 +13,7 @@ export default class ImageSourceTar extends ImageSource {
         this.tarLoadProgress = progress;
       });
       this.tarball = new Tarball(data, {useWorker: this.options.useWorker});
-
       this.context.log('Tarball', this.tarball);
-
-      this.images.forEach(image => image.available = image.imageURL !== undefined && this.tarball?.getInfo(image.imageURL) !== undefined);
     }
 
     return super.loadResources();
@@ -33,16 +30,11 @@ export default class ImageSourceTar extends ImageSource {
   }
 
   public override async fetchImage(imageElement: ImageElement) {
-    return new Promise<ImageBitmap | HTMLImageElement>((resolve, reject) => {
-      if (imageElement.image !== undefined) {
-        resolve(imageElement.image);
-      } else if (imageElement.available && !imageElement.loading) {
-        imageElement.loading = true;
+    return new Promise<CanvasImageSource>((resolve, reject) => {
+      if (imageElement.available) {
         this.tarball?.getImage(imageElement.imageURL || '', imageElement.frame.index).then((image: HTMLImageElement | ImageBitmap) => {
-          imageElement.image = image;
           resolve(image);
         }).catch(e => {
-          imageElement.reset();
           reject(e);
         });
       } else {

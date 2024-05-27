@@ -1,14 +1,13 @@
 import ImageSource, {type ImageSourceType, INPUT_SRC} from "./ImageSource.js";
 import type Frame from "./Frame.js";
 
-
 export default class ImageElement {
   public available: boolean = true;
   public loading: boolean = false;
   public type: ImageSourceType = INPUT_SRC;
   public frame: Frame;
 
-  private _image: ImageBitmap | HTMLImageElement | undefined;
+  private _image: CanvasImageSource | undefined;
   private context: ImageSource;
 
   constructor(context: ImageSource, frame: Frame) {
@@ -17,7 +16,7 @@ export default class ImageElement {
     this.type = this.context.type;
   }
 
-  public get image(): ImageBitmap | HTMLImageElement | undefined {
+  public get image(): CanvasImageSource | undefined {
     if (this._image !== undefined && !this.loading) {
       return this._image;
     } else {
@@ -25,9 +24,11 @@ export default class ImageElement {
     }
   }
 
-  public set image(image: ImageBitmap | HTMLImageElement | undefined) {
-    this.releaseImage();
-    this._image = image;
+  public set image(image: CanvasImageSource | undefined) {
+    if (image !== this._image) {
+      this.releaseImage();
+      this._image = image;
+    }
   }
 
   public get imageURL(): string | undefined {
@@ -39,7 +40,7 @@ export default class ImageElement {
     this._image = undefined;
   }
 
-  public async fetchImage(): Promise<ImageBitmap | HTMLImageElement> {
+  public async fetchImage(): Promise<CanvasImageSource> {
     return this.context.fetchImage(this);
   }
 

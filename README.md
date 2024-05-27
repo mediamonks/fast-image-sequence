@@ -1,8 +1,9 @@
 # Fast Image Sequence Renderer
 
 The fast-image-sequence is a powerful package that allows you to display a sequence of images at a high frame rate on
-your website. It can be used to create smooth animations or video-like sequences from a series of images. Zero
-dependencies.
+your website. It can be used to create smooth animations, 360 product views or video-like sequences from a series of
+images.
+Zero dependencies.
 
 The FastImageSequence supports various options for customizing the behaviour of the image sequence, such as preloading
 all images, using a worker to handle tar files, and more.
@@ -70,9 +71,10 @@ const options = {
 
 You can also set multiple sources for the FastImageSequence class. This can be useful when you want to load images from
 different sources, such as a tar file *and* an image URL. You can set an array of ImageSource in the src option.
-Each ImageSource can have its imageURL and tarURL. 
+Each ImageSource can have its imageURL and tarURL.
 
-The FastImageSequence class will try to load images from the first source in the array. If an image is not available yet, it will try to load it from the next source in the
+The FastImageSequence class will try to load images from the first source in the array. If an image is not available
+yet, it will try to load it from the next source in the
 array, etc. Finally, the best matching available image will be rendered.
 
 ```ts
@@ -103,9 +105,11 @@ const sequence = new FastImageSequence(containerElement, options);
 sequence.play();
 ```
 
-The example above can be useful when you have a large image sequence with high-resolution images or if the user can randomly jump to any frame in the sequence and you want a fast response time.
+The example above can be useful when you have a large image sequence with high-resolution images or if the user can
+randomly jump to any frame in the sequence and you want a fast response time.
 
-Note that you can store a subset of the images (all even images, for example) in the tar file. The FastImageSequence will automatically fall back to the best matching available image when rendering a frame.
+Note that you can store a subset of the images (all even images, for example) in the tar file. The FastImageSequence
+will automatically fall back to the best matching available image when rendering a frame.
 
 ### Available options for FastImageSequence
 
@@ -131,6 +135,10 @@ Note that you can store a subset of the images (all even images, for example) in
 - **useWorker**: `boolean` - Use a worker for fetching images. Default: `!isMobile()`
 - **maxConnectionLimit**: `number` - Maximum number of concurrent connections for fetching images. Default: `4`
 - **maxCachedImages**: `number` - Number of images to cache. Default: `32`
+- **available**: `((index: number) => boolean) | undefined` - Callback returning whether an image is available.
+  Optional.
+- **image**: `((index: number) => CanvasImageSource) | undefined` - Callback returning the image given its index.
+  Optional.
 
 ## Methods
 
@@ -224,6 +232,8 @@ resolves when progress reaches 1.
 ```typescript
 sequence.onLoadProgress(onProgress);
 ```
+
+## ImageSource Methods
 
 ### sources[index:number].setMaxCachedImages(maxCache: number, onProgress?: (progress: number) => void): Promise<void>
 

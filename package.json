@@ -9,7 +9,12 @@
     "canvas",
     "fast",
     "optimized",
-    "performance"
+    "performance",
+    "sequence",
+    "image",
+    "renderer",
+    "360",
+    "product"
   ],
   "repository": "git@github.com:mediamonks/fast-image-sequence.git",
   "author": "Reinder Nijhoff <reinder@mediamonks.com>",

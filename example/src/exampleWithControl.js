@@ -11,7 +11,7 @@ export async function initExampleWithControl(container) {
         src: [
             {
                 imageURL: (i) => `${('' + (i + 1)).padStart(4, '0')}.webp`,
-                maxCachedImages: 89, // default 32
+                maxCachedImages: 8, // default 32
             },
             {
                 tarURL: 'lowrespreviews.tar',

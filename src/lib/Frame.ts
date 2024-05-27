@@ -9,11 +9,11 @@ export default class Frame {
     this.index = index;
   }
 
-  public get image(): ImageBitmap | HTMLImageElement | undefined {
+  public get image(): CanvasImageSource | undefined {
     return this.images.find(image => image.image !== undefined)?.image;
   }
 
-  public async getImage(): Promise<HTMLImageElement | ImageBitmap> {
+  public async getImage(): Promise<CanvasImageSource> {
     return new Promise(async (resolve, reject) => {
       if (this.image !== undefined) {
         resolve(this.image);
@@ -28,7 +28,7 @@ export default class Frame {
     });
   }
 
-  public async fetchImage(): Promise<ImageBitmap | HTMLImageElement | undefined> {
+  public async fetchImage(): Promise<CanvasImageSource | undefined> {
     return this.images.find(image => image.available)?.fetchImage();
   }
 

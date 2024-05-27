@@ -147,8 +147,10 @@ export class FastImageSequence {
     this.sources = sources.map((src, index) => {
       if (src.tarURL !== undefined) {
         return new ImageSourceTar(this, index, src);
-      } else {
+      } else if (src.imageURL !== undefined) {
         return new ImageSourceFetch(this, index, src);
+      } else {
+        return new ImageSource(this, index, src);
       }
     });
 
@@ -263,7 +265,7 @@ export class FastImageSequence {
    * @param {number} index - The index of the frame.
    * @returns {Promise<HTMLImageElement | ImageBitmap | undefined>} - A promise that resolves with the image of the frame.
    */
-  public async getFrameImage(index: number): Promise<HTMLImageElement | ImageBitmap | undefined> {
+  public async getFrameImage(index: number): Promise<CanvasImageSource | undefined> {
     return await (this.frames[this.wrapIndex(index)] as Frame).fetchImage();
   }
 
@@ -431,12 +433,17 @@ export class FastImageSequence {
     this.drawImage(image);
   }
 
-  private drawImage(image: HTMLImageElement | ImageBitmap) {
-    const containerAspect = this.container.offsetWidth / this.container.offsetHeight;
-    const imageAspect = image.width / image.height;
+  private drawImage(image: CanvasImageSource) {
+    // @ts-ignore
+    const imageWidth = image.naturalWidth || image.width || image.videoWidth;
+    // @ts-ignore
+    const imageHeight = image.naturalHeight || image.height || image.videoHeight;
 
-    this.width = Math.max(this.width, image.width);
-    this.height = Math.max(this.height, image.height);
+    const containerAspect = this.container.offsetWidth / this.container.offsetHeight;
+    const imageAspect = imageWidth / imageHeight;
+
+    this.width = Math.max(this.width, imageWidth);
+    this.height = Math.max(this.height, imageHeight);
 
     if (this.options.objectFit === 'contain') {
       // contain
@@ -466,7 +473,7 @@ export class FastImageSequence {
       this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
       this.clearCanvas = false;
     }
-    this.context.drawImage(image, 0, 0, image.width, image.height, dx, dy, this.width, this.height);
+    this.context.drawImage(image, 0, 0, imageWidth, imageHeight, dx, dy, this.width, this.height);
   }
 
   private process(dt: number) {

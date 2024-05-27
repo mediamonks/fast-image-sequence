@@ -21,12 +21,13 @@ export async function initExampleLoadTar(container) {
         const dataURL = await blobToDataURL(blob);
 
         const fastImageSequence = new FastImageSequence(container, {
-            name: 'PlayWithControlTest',
+            name: 'LoadTar',
             frames: 89,
             src: [
                 {
                     tarURL: dataURL,
                     imageURL: (i) => `${('' + (i + 1)).padStart(4, '0')}.jpg`,
+                    useWorker: false,
                 }
             ],
             // optional arguments:

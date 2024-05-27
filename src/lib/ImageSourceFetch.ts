@@ -9,36 +9,22 @@ export default class ImageSourceFetch extends ImageSource {
   }
 
   public override async fetchImage(imageElement: ImageElement) {
-    return new Promise<ImageBitmap | HTMLImageElement>((resolve, reject) => {
+    return new Promise<CanvasImageSource>((resolve, reject) => {
       if (imageElement.imageURL) {
-        imageElement.loading = true;
-
-        const loadingDone = (image: ImageBitmap | HTMLImageElement) => {
-          if (imageElement.loading) {
-            imageElement.image = image;
-            resolve(image);
-          }
-        };
-
-        const loadingError = (e: any) => {
-          imageElement.reset();
-          reject(e);
-        };
-
         if (this.options.useWorker) {
           const worker = getImageFetchWorker();
           worker.load(this.index, imageElement.imageURL).then((imageBitmap) => {
-            loadingDone(imageBitmap);
+            resolve(imageBitmap);
             releaseImageFetchWorker(worker);
-          }).catch(e => loadingError(e));
+          }).catch(e => reject(e));
         } else {
           const imgElement = new Image();
           loadImage(imgElement, imageElement.imageURL).then(() => {
-            loadingDone(imgElement);
-          }).catch(e => loadingError(e));
+            resolve(imgElement);
+          }).catch(e => reject(e));
         }
       } else {
-        reject('Image url not set');
+        reject('Image url not set or image allready loading');
       }
     });
   }
