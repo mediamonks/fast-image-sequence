@@ -1,8 +1,8 @@
 import {FastImageSequence} from '../../src/index';
 
-const prevButton = document.getElementById('prev-button');
-const nextButton = document.getElementById('next-button');
-const progress = document.getElementById('slider-input');
+const prevButton = document.getElementById('prev-button-1');
+const nextButton = document.getElementById('next-button-1');
+const progress = document.getElementById('slider-input-1');
 
 export async function initExampleWithControl(container) {
     const fastImageSequence = new FastImageSequence(container, {

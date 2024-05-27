@@ -2,6 +2,7 @@ import Frame from "./Frame.js";
 import {createLogElement, logToScreen} from "./LogToScreen.js";
 import ImageSource, {type ImageSourceOptions, INPUT_SRC} from "./ImageSource.js";
 import ImageSourceTar from "./ImageSourceTar.js";
+import ImageSourceFetch from "./ImageSourceFetch.js";
 
 export function isMobile(): boolean {
   return (typeof navigator !== "undefined" && /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent));
@@ -147,7 +148,7 @@ export class FastImageSequence {
       if (src.tarURL !== undefined) {
         return new ImageSourceTar(this, index, src);
       } else {
-        return new ImageSource(this, index, src);
+        return new ImageSourceFetch(this, index, src);
       }
     });
 
@@ -205,6 +206,18 @@ export class FastImageSequence {
   }
 
   /**
+   * Get the first ImageSource from the sources array.
+   * @returns {ImageSource} - The first ImageSource object in the sources array.
+   */
+  public get src() {
+    return this.sources[0] as ImageSource;
+  }
+
+  private get index(): number {
+    return this.wrapIndex(this.frame);
+  }
+
+  /**
    * Returns a promise that resolves when the image sequence is ready to play.
    */
   public ready(): Promise<void> {
@@ -219,18 +232,6 @@ export class FastImageSequence {
       };
       checkInitialized();
     });
-  }
-
-  /**
-   * Get the first ImageSource from the sources array.
-   * @returns {ImageSource} - The first ImageSource object in the sources array.
-   */
-  public get src() {
-    return this.sources[0] as ImageSource;
-  }
-
-  private get index(): number {
-    return this.wrapIndex(this.frame);
   }
 
   /**
@@ -331,7 +332,7 @@ export class FastImageSequence {
     this.clearCanvas = true;
   }
 
-  public setLoadingPriority() {
+  private setLoadingPriority() {
     const priorityIndex = this.index;// this.wrapIndex(Math.min(this.spread / 2 - 2, (this.frame - this.prevFrame) * (dt * 60)) + this.frame);
     this.frames.forEach((image) => {
       image.priority = Math.abs(image.index + 0.25 - priorityIndex);

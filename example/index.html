@@ -16,7 +16,7 @@
         .grid-item {
             margin: 0;
             padding: 0;
-            width: 50vw;
+            width: 33.333333vw;
             height: 50vh;
             line-height: 0;
             position: relative;
@@ -57,14 +57,21 @@
 <body>
 <div class="grid-item">
     <div class="control">
-        <button class="control-button" id="prev-button">&lt;</button>
-        <input type="range" min="0" max="1" value="0" step="0.0001" class="control-slider" id="slider-input">
-        <button class="control-button" id="next-button">&gt;</button>
+        <button class="control-button" id="prev-button-1">&lt;</button>
+        <input type="range" min="0" max="1" value="0" step="0.0001" class="control-slider" id="slider-input-1">
+        <button class="control-button" id="next-button-1">&gt;</button>
     </div>
 </div>
 <div class="grid-item"></div>
 <div class="grid-item"></div>
 <div class="grid-item"></div>
+<div class="grid-item">
+    <div class="control">
+        <button class="control-button" id="prev-button-2">&lt;</button>
+        <input type="range" min="0" max="1" value="0" step="0.0001" class="control-slider" id="slider-input-2">
+        <button class="control-button" id="next-button-2">&gt;</button>
+    </div>
+</div>
 
 <script type="module" src="./src/index.js"></script>
 </body>

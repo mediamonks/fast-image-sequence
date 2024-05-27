@@ -17,7 +17,6 @@ export default class ImageSourceTar extends ImageSource {
       this.context.log('Tarball', this.tarball);
 
       this.images.forEach(image => image.available = image.imageURL !== undefined && this.tarball?.getInfo(image.imageURL) !== undefined);
-      this.setMaxCachedImages(this.options.maxCachedImages);
     }
 
     return super.loadResources();

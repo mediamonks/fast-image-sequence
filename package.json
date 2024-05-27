@@ -51,8 +51,5 @@
   },
   "engines": {
     "node": ">=16.0.0"
-  },
-  "dependencies": {
-    "@mediamonks/fast-image-sequence": "^0.6.4"
   }
 }
