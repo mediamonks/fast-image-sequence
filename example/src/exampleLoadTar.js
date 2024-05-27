@@ -27,7 +27,6 @@ export async function initExampleLoadTar(container) {
                 {
                     tarURL: dataURL,
                     imageURL: (i) => `${('' + (i + 1)).padStart(4, '0')}.jpg`,
-                    useWorker: false,
                 }
             ],
             // optional arguments:
