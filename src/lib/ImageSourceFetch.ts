@@ -1,9 +1,13 @@
 import ImageElement from "./ImageElement.js";
 import {getImageFetchWorker, releaseImageFetchWorker} from "./ImageFetch.js";
 import {loadImage} from "./DownloadFile.js";
-import ImageSource from "./ImageSource.js";
+import ImageSource, {INPUT_SRC} from "./ImageSource.js";
 
 export default class ImageSourceFetch extends ImageSource {
+  public override get type() {
+    return INPUT_SRC;
+  }
+
   public override getImageURL(index: number): string | undefined {
     return this.options.imageURL ? new URL(this.options.imageURL(index), window.location.href).href : undefined;
   }

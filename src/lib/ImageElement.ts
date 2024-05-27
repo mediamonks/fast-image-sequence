@@ -1,10 +1,9 @@
-import ImageSource, {type ImageSourceType, INPUT_SRC} from "./ImageSource.js";
+import ImageSource from "./ImageSource.js";
 import type Frame from "./Frame.js";
 
 export default class ImageElement {
   public available: boolean = true;
   public loading: boolean = false;
-  public type: ImageSourceType = INPUT_SRC;
   public frame: Frame;
 
   private _image: CanvasImageSource | undefined;
@@ -13,7 +12,6 @@ export default class ImageElement {
   constructor(context: ImageSource, frame: Frame) {
     this.context = context;
     this.frame = frame;
-    this.type = this.context.type;
   }
 
   public get image(): CanvasImageSource | undefined {

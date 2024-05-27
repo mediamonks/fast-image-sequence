@@ -1,4 +1,4 @@
-import ImageSource from "./ImageSource.js";
+import ImageSource, {INPUT_TAR} from "./ImageSource.js";
 import {downloadFile} from "./DownloadFile.js";
 import Tarball from "./Tarball.js";
 import type ImageElement from "./ImageElement.js";
@@ -6,6 +6,10 @@ import type ImageElement from "./ImageElement.js";
 export default class ImageSourceTar extends ImageSource {
   public tarball: Tarball | undefined;
   private tarLoadProgress: number = 0;
+
+  public override get type() {
+    return INPUT_TAR;
+  }
 
   public override async loadResources() {
     if (this.options.tarURL !== undefined) {

@@ -1,6 +1,6 @@
 import Frame from "./Frame.js";
 import {createLogElement, logToScreen} from "./LogToScreen.js";
-import ImageSource, {type ImageSourceOptions, INPUT_SRC} from "./ImageSource.js";
+import ImageSource, {type ImageSourceOptions, INPUT_CODE, INPUT_SRC} from "./ImageSource.js";
 import ImageSourceTar from "./ImageSourceTar.js";
 import ImageSourceFetch from "./ImageSourceFetch.js";
 
@@ -493,11 +493,11 @@ export class FastImageSequence {
 
   private logDebugStatus(output: HTMLDivElement) {
     const formatPercentage = (n: number) => `${Math.abs(n * 100).toFixed(1).padStart(5, ' ')}%`;
-    let debugInfo = `${this.options.name} - frames: ${this.frames.length}, wrap: ${this.options.loop}, objectFit: ${this.options.objectFit}\n- loadProgress ${formatPercentage(this.loadProgress)}, last frame drawn ${this.lastFrameDrawn}/${this.index}\n`;
+    let debugInfo = `${this.options.name} - frames: ${this.frames.length}, wrap: ${this.options.loop}, objectFit: ${this.options.objectFit}\n loadProgress ${formatPercentage(this.loadProgress)}, last frame drawn ${this.lastFrameDrawn}/${this.index}\n`;
 
     for (const source of this.sources) {
       const {progress, numLoading, numLoaded, maxLoaded} = source.getLoadStatus();
-      debugInfo += `- ${source.type === INPUT_SRC ? `image` : `  tar`} ${formatPercentage(progress)}, numLoading: ${numLoading}, numLoaded: ${numLoaded}/${maxLoaded}${source.options.useWorker ? ', use worker' : ''}\n`;
+      debugInfo += ` src[${source.index}] ${source.type === INPUT_SRC ? `image:` : source.type === INPUT_CODE ? `code: ` : `tar:  `} ${formatPercentage(progress)}, numLoading: ${numLoading}, numLoaded: ${numLoaded}/${maxLoaded}${source.options.useWorker ? ', use worker' : ''}\n`;
     }
     logToScreen(output, debugInfo);
   }

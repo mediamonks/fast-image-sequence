@@ -3,8 +3,9 @@ import ImageElement from "./ImageElement.js";
 
 export const INPUT_SRC = 0;
 export const INPUT_TAR = 1;
+export const INPUT_CODE = 2;
 
-export type ImageSourceType = typeof INPUT_SRC | typeof INPUT_TAR;
+export type ImageSourceType = typeof INPUT_SRC | typeof INPUT_TAR | typeof INPUT_CODE;
 
 /**
  * @typedef ImageSourceOptions
@@ -45,7 +46,6 @@ export default class ImageSource {
 
   public options: ImageSourceOptions;
   public index: number = -0;
-  public type: ImageSourceType;
   public initialized: boolean = false;
 
   protected context: FastImageSequence;
@@ -54,11 +54,14 @@ export default class ImageSource {
     this.context = context;
     this.index = index;
     this.options = {...ImageSource.defaultOptions, ...options};
-    this.type = this.options.tarURL !== undefined ? INPUT_TAR : INPUT_SRC;
 
     this.options.maxCachedImages = clamp(Math.floor(this.options.maxCachedImages), 1, this.context.options.frames);
 
     this.context.frames.forEach(frame => frame.images[index] = new ImageElement(this, frame));
+  }
+
+  public get type() {
+    return INPUT_CODE;
   }
 
   protected get images(): ImageElement[] {
