@@ -105,8 +105,7 @@ const sequence = new FastImageSequence(containerElement, options);
 sequence.play();
 ```
 
-The example above can be useful when you have a large image sequence with high-resolution images or if the user can
-randomly jump to any frame in the sequence and you want a fast response time.
+The example above can be useful when you have a large image sequence with high-resolution images or if the user randomly jumps to any frame in the sequence and you want a fast response time.
 
 Note that you can store a subset of the images (all even images, for example) in the tar file. The FastImageSequence
 will automatically fall back to the best matching available image when rendering a frame.
@@ -119,8 +118,8 @@ will automatically fall back to the best matching available image when rendering
 - **loop**: `boolean` - Whether the sequence should loop. Default: `false`
 
 - **objectFit**: `'contain' | 'cover'` - How the image should fit the canvas. Default: `'cover'`
-- **horizontalAlign**: `number` - Horizontal alignment of the image. Default: `0.5`
-- **verticalAlign**: `number` - Vertical alignment of the image. Default: `0.5`
+- **horizontalAlign**: `number` - Horizontal image alignment. Default: `0.5`
+- **verticalAlign**: `number` - Vertical image alignment. Default: `0.5`
 
 - **poster**: `string | undefined` - URL of the poster image. Optional.
 - **fillStyle**: `string` - Fill style of the canvas. Default: `'#00000000'`
@@ -132,15 +131,15 @@ will automatically fall back to the best matching available image when rendering
 
 - **imageURL**: `(index: number) => string` - Callback returning the URL of an image given its index.
 - **tarURL**: `string | undefined` - URL of the tar file containing images. Optional.
-- **useWorker**: `boolean` - Use a worker for fetching images. Default: `!isMobile()`
-- **maxConnectionLimit**: `number` - Maximum number of concurrent connections for fetching images. Default: `4`
+- **useWorker**: `boolean` - Use a worker to fetch images. Default: `!isMobile()`
+- **maxConnectionLimit**: `number` - Maximum concurrent connections for fetching images. Default: `4`
 - **maxCachedImages**: `number` - Number of images to cache. Default: `32`
 - **available**: `((index: number) => boolean) | undefined` - Callback returning whether an image is available.
   Optional.
 - **image**: `((index: number) => Promise<CanvasImageSource>) | undefined` - Callback returning the image given its
   index.
   Optional.
-- **timeout**: `number` - Only start loading an image if the same frame is visible for this amount of time (in
+- **timeout**: `number` - Only start loading an image if the same frame is visible for this time (in
   milliseconds). Optional.
 
 ## Methods
@@ -194,7 +193,7 @@ const pausedStatus = sequence.paused;
 
 ### progress
 
-This is a getter-and-setter method that retrieves or sets the image sequence's current progress (0-1).
+This getter-and-setter method retrieves or sets the image sequence's current progress (0-1).
 
 ```typescript
 // Get the progress
@@ -225,7 +224,7 @@ This method gets the image of a specific frame and returns a Promise that resolv
 sequence.getFrameImage(index);
 ```
 
-- `index` is the index of the frame to get the image from.
+- `index` is the index of the frame.
 
 ### onLoadProgress(onProgress?: (progress: number) => void): Promise<void>
 
@@ -248,8 +247,7 @@ sequence.sources[0].setNumberOfCachedImages(maxCache, onProgress);
 ```
 
 - `maxCache` is the number of images to cache. This should be a positive integer.
-- `onProgress` is an optional callback function that is called whenever the progress of caching images changes. It
-  receives the current progress as a number between 0 and 1.
+- `onProgress` is an optional callback function whenever the loading progress changes. It receives the current progress as a number between 0 and 1.
 
 The returned Promise resolves when loadProgress reaches 1.
 
@@ -277,7 +275,7 @@ To create a tarball with images, you can follow these steps:
     ```
 
 Once you have your tarball, you can use it with `FastImageSequence` by setting the `tarURL` option to the URL of your
-tarball and implementing the `tarImageURLCallback` to return the URL of an image in the tarball given its index.
+tarball and implement the `imageURL` to return the URL of an image in the tarball, given its index.
 
 ## Frequently Asked Questions
 
@@ -286,14 +284,14 @@ tarball and implementing the `tarImageURLCallback` to return the URL of an image
 I created an easy-to-use online tool for this: [Tar File Creator](https://reindernijhoff.net/tools/tar/). Drag and drop your selection of images onto the page, and a tar file will be generated that you can download.
 You can also use a tar tool to create the tar file yourself. 
 
-### I want to download just 8 frames first, and preload the rest of the images later. How can I do this?
+### I want to download just 8 frames first and preload the rest of the images later. How can I do this?
 
 You can set the `maxCachedImages` option to 8. The FastImageSequence will only preload and cache the first 8 images. You can then set the `maxCachedImages` option to a higher number to preload the rest of the images later.
 See this [example](https://github.com/mediamonks/fast-image-sequence/blob/main/example/src/exampleStillImage.js) for more information.
 
-### I have an image sequence of low-res images, and want to download a high-res image when the user stops at a frame. How can I do this?
+### I have an image sequence of low-res images and want to download a high-res image when the user stops at a frame. How can I do this?
 
-You can do this by setting multiple sources in the `src` option. The FastImageSequence will try to load images from the first source in the array. If an image is not available yet, it will try to load it from the next source in the array, etc. Finally, the best matching available image will be rendered.
+You can set multiple sources using the `src` option. The FastImageSequence will try to load images from the first source in the array. If an image is not available yet, it will try to load it from the next source in the array, etc. Finally, the best matching available image will be rendered.
 By setting a `timeout` option, you can control when the FastImageSequence should start loading an image. For example:
 
 ```ts
@@ -322,9 +320,9 @@ const sequence = new FastImageSequence(containerElement, options);
 
 ```
 
-### Can I download a tar file myself an use it with FastImageSequence?
+### Can I download a tar file myself and use it with FastImageSequence?
 
-Yes, just download the tar file yourself, and create a data URL from it. You can then use this data URL as the `tarURL` option. 
+Yes, you can download the tar file yourself and create a data URL from it. You can then use this data URL as the `tarURL` option. 
 See this [example](https://github.com/mediamonks/fast-image-sequence/blob/main/example/src/exampleLoadTar.js) for more information.
 
 
