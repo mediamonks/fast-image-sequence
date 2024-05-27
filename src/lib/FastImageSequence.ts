@@ -86,6 +86,7 @@ export class FastImageSequence {
   private logElement: HTMLElement | undefined;
   private initialized: boolean = false;
   private posterImage: HTMLImageElement | undefined;
+  private timeFrameVisible: number = 0;
 
   /**
    * Creates an instance of FastImageSequence.
@@ -414,7 +415,13 @@ export class FastImageSequence {
       }
     }
 
-    this.process(dt);
+    if (this.wrapIndex(this.frame) === this.wrapIndex(this.prevFrame)) {
+      this.timeFrameVisible += dt;
+    } else {
+      this.timeFrameVisible = 0;
+    }
+
+    this.process();
 
     this.tickFuncs.forEach(func => func(dt));
 
@@ -476,10 +483,11 @@ export class FastImageSequence {
     this.context.drawImage(image, 0, 0, imageWidth, imageHeight, dx, dy, this.width, this.height);
   }
 
-  private process(dt: number) {
+  private process() {
     for (const source of this.sources) {
-      this.setLoadingPriority();
-      source.process(() => this.setLoadingPriority());
+      if (this.timeFrameVisible >= source.options.timeout / 1000) {
+        source.process(() => this.setLoadingPriority());
+      }
     }
   }
 

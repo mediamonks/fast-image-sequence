@@ -137,8 +137,11 @@ will automatically fall back to the best matching available image when rendering
 - **maxCachedImages**: `number` - Number of images to cache. Default: `32`
 - **available**: `((index: number) => boolean) | undefined` - Callback returning whether an image is available.
   Optional.
-- **image**: `((index: number) => CanvasImageSource) | undefined` - Callback returning the image given its index.
+- **image**: `((index: number) => Promise<CanvasImageSource>) | undefined` - Callback returning the image given its
+  index.
   Optional.
+- **timeout**: `number` - Only start loading an image if the same frame is visible for this amount of time (in
+  milliseconds). Optional.
 
 ## Methods
 

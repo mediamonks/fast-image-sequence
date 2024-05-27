@@ -74,7 +74,7 @@ export async function initExampleWithCustomCanvas(container) {
             {
                 image: (i) => createCustomCanvas(i, frames),
                 maxCachedImages: frames,
-            },
+            }
         ],
         // optional arguments:
         loop: true, // default false

@@ -17,7 +17,8 @@ export type ImageSourceType = typeof INPUT_SRC | typeof INPUT_TAR;
  * @property {number} maxCachedImages - The number of images to cache.
  * @property {number} maxConnectionLimit - The maximum number of images to load at once.
  * @property {((index: number) => boolean) | undefined} available - A callback function that returns if an image is available given its index.
- * @property {((index: number) => CanvasImageSource) | undefined} image - A callback function that returns the image element given its index.
+ * @property {((index: number) => Promise<CanvasImageSource>) | undefined} image - A callback function that returns the image element given its index.
+ * @property {number} timeout - Only start loading an image if the same frame is visible for this amount of time (in milliseconds).
  */
 export type ImageSourceOptions = {
   imageURL: ((index: number) => string) | undefined,
@@ -27,6 +28,7 @@ export type ImageSourceOptions = {
   maxConnectionLimit: number,
   available: ((index: number) => boolean) | undefined,
   image: ((index: number) => Promise<CanvasImageSource>) | undefined,
+  timeout: number,
 }
 
 export default class ImageSource {
@@ -38,6 +40,7 @@ export default class ImageSource {
     maxConnectionLimit: 4,
     available:          undefined,
     image:              undefined,
+    timeout:            -1,
   };
 
   public options: ImageSourceOptions;
@@ -90,6 +93,8 @@ export default class ImageSource {
   }
 
   public process(setLoadingPriority: () => void) {
+    setLoadingPriority();
+
     let {numLoading, numLoaded} = this.getLoadStatus();
     const maxConnectionLimit = this.options.maxConnectionLimit;
     const imagesToLoad = this.images.filter(a => a.available && a.image === undefined && !a.loading && a.frame.priority).sort((a, b) => a.frame.priority - b.frame.priority);
