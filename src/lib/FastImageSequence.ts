@@ -493,7 +493,7 @@ export class FastImageSequence {
 
   private logDebugStatus(output: HTMLDivElement) {
     const formatPercentage = (n: number) => `${Math.abs(n * 100).toFixed(1).padStart(5, ' ')}%`;
-    let debugInfo = `${this.options.name} - frames: ${this.frames.length}, wrap: ${this.options.loop}, objectFit: ${this.options.objectFit}\n loadProgress ${formatPercentage(this.loadProgress)}, last frame drawn ${this.lastFrameDrawn}/${this.index}\n`;
+    let debugInfo = `${this.options.name} - frames: ${this.frames.length}, loop: ${this.options.loop}, objectFit: ${this.options.objectFit}\n loadProgress ${formatPercentage(this.loadProgress)}, last frame drawn ${this.lastFrameDrawn}/${this.index}\n`;
 
     for (const source of this.sources) {
       const {progress, numLoading, numLoaded, maxLoaded} = source.getLoadStatus();
