@@ -216,7 +216,7 @@ const currentLoadProgress = sequence.loadProgress;
 The `loadProgress` property returns a number between 0 and 1, representing the current load progress of the image
 sequence. Note that the value can decrease if the sequence is played and new frames are loaded.
 
-### getFrameImage(index: number): Promise<HTMLImageElement | ImageBitmap>
+### getFrameImage(index: number): Promise<CanvasImageSource>
 
 This method gets the image of a specific frame and returns a Promise that resolves with the image of the frame.
 
