@@ -15,9 +15,7 @@ export async function initExampleWithControl(container) {
             },
             {
                 tarURL: 'lowrespreviews.tar',
-                imageURL: (i) => `${('' + (i + 1)).padStart(4, '0')}.jpg`,
-                maxCachedImages: 89,
-                useWorker: true,
+                imageURL: (i) => `${('' + (i + 1)).padStart(4, '0')}.jpg`
             }
         ],
         // optional arguments:
