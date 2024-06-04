@@ -37,7 +37,7 @@ export type FastImageSequenceDisplayOptions = {
  */
 export type FastImageSequenceOptions = {
   frames: number,
-  src: ImageSourceOptions[] | ImageSourceOptions,
+  src: Partial<ImageSourceOptions>[] | Partial<ImageSourceOptions>,
 } & Partial<{
   loop: boolean;
   poster: string | undefined;
