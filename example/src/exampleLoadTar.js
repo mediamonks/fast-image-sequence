@@ -16,7 +16,7 @@ function blobToDataURL(blob) {
 
 export async function initExampleLoadTar(container) {
     // load tar file with lowres previews
-    fetch('sequence_1/lowrespreviews.tar').then(async (response) => {
+    fetch('lowrespreviews.tar').then(async (response) => {
         const blob = await response.blob();
         const dataURL = await blobToDataURL(blob);
 

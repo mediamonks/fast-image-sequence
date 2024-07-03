@@ -5,7 +5,7 @@ export async function initExamplePlayBackwards(container) {
         name: 'PlayBackwardsTest at 200fps',
         frames: 120,
         src: {
-            imageURL: (i) => `sequence_2/${('' + (i + 1)).padStart(3, '0')}.jpg`,
+            imageURL: (i) => `${('' + (i + 1)).padStart(3, '0')}.jpg`,
         },
         // optional arguments:
         loop: true, // default false
