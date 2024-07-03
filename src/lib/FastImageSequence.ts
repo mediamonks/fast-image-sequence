@@ -350,7 +350,12 @@ export class FastImageSequence {
       this.log('Poster image', this.options.poster);
       const posterImage = new Image();
       posterImage.src = this.options.poster;
-      await posterImage.decode().then(() => this.drawImage(this.posterImage = posterImage)).catch((e) => this.log(e));
+      await posterImage.decode().then(() => {
+        this.posterImage = posterImage;
+        if (this.lastFrameDrawn < 0) {
+          this.drawImage(this.posterImage);
+        }
+      }).catch((e) => this.log(e));
     }
     await Promise.all(this.sources.map(src => src.loadResources()));
     await this.getFrameImage(0);
@@ -436,7 +441,7 @@ export class FastImageSequence {
     }
 
     this.lastFrameDrawn = frame.index;
-
+    this.canvas.setAttribute('data-frame', frame.index.toString());
     this.drawImage(image);
   }
 

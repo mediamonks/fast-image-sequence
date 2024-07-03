@@ -10,11 +10,11 @@ export async function initExampleWithControl(container) {
         frames: 89,
         src: [
             {
-                imageURL: (i) => `${('' + (i + 1)).padStart(4, '0')}.webp`,
+                imageURL: (i) => `sequence_1/${('' + (i + 1)).padStart(4, '0')}.webp`,
                 maxCachedImages: 8, // default 32
             },
             {
-                tarURL: 'lowrespreviews.tar',
+                tarURL: 'sequence_1/lowrespreviews.tar',
                 imageURL: (i) => `${('' + (i + 1)).padStart(4, '0')}.jpg`
             }
         ],

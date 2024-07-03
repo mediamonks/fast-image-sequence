@@ -5,7 +5,7 @@ export async function initExampleStillImage(container) {
         name: 'StillImageTest',
         frames: 89,
         src: {
-            imageURL: (i) => `${('' + (i + 1)).padStart(4, '0')}.webp`,
+            imageURL: (i) => `sequence_1/${('' + (i + 1)).padStart(4, '0')}.webp`,
             maxCachedImages: 1, // default 32
             useWorker: true,
         },

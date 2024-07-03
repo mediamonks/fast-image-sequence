@@ -16,12 +16,12 @@ function createFastImageSequence(container) {
     const src = [];
 
     const imageSrc = {
-        imageURL: (i) => `${('' + (i + 1)).padStart(4, '0')}.webp`,
+        imageURL: (i) => `sequence_1/${('' + (i + 1)).padStart(4, '0')}.webp`,
         useWorker: Math.random() > .5, // default true
         maxCachedImages: (1 + Math.random() * 32) | 0, // default 32
     };
     const tarSrc = {
-        tarURL: 'lowrespreviews.tar',
+        tarURL: 'sequence_1/lowrespreviews.tar',
         imageURL: (i) => `${('' + (i + 1)).padStart(4, '0')}.jpg`,
         useWorker: Math.random() > .5, // default true
         maxCachedImages: (1 + Math.random() * 32) | 0, // default 32
