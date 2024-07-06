@@ -175,6 +175,14 @@ This method stops playing the image sequence.
 sequence.stop();
 ```
 
+### addMoreFrames(moreFrames: number)
+
+This method adds more frames to the image sequence.
+
+```typescript
+sequence.addMoreFrames(moreFrames);
+```
+
 ### playing
 
 This getter method returns a boolean indicating whether the image sequence is playing.
@@ -282,7 +290,7 @@ tarball and implement the `imageURL` to return the URL of an image in the tarbal
 ### How can I create a tar file (tarball) with images?
 
 I created an easy-to-use online tool for this: [Tar File Creator](https://reindernijhoff.net/tools/tar/). Drag and drop your selection of images onto the page, and a tar file will be generated that you can download.
-You can also use a tar tool to create the tar file yourself. 
+You can also use a tar tool to create the tar file yourself.
 
 ### I want to download just 8 frames first and preload the rest of the images later. How can I do this?
 
@@ -322,7 +330,7 @@ const sequence = new FastImageSequence(containerElement, options);
 
 ### Can I download a tar file myself and use it with FastImageSequence?
 
-Yes, you can download the tar file yourself and create a data URL from it. You can then use this data URL as the `tarURL` option. 
+Yes, you can download the tar file yourself and create a data URL from it. You can then use this data URL as the `tarURL` option.
 See this [example](https://github.com/mediamonks/fast-image-sequence/blob/main/example/src/exampleLoadTar.js) for more information.
 
 
