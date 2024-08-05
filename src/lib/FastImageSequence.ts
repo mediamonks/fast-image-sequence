@@ -71,12 +71,12 @@ export class FastImageSequence {
   public sources: ImageSource[] = [];
 
   private context: CanvasRenderingContext2D;
-  private tickFuncs: ((dt: number) => void) [] = [];
+  private tickFunctions: ((dt: number) => void) [] = [];
   private startTime: number = -1;
   private animationRequestId: number = 0;
   private container: HTMLElement;
   private resizeObserver: ResizeObserver;
-  private mutationOberver: MutationObserver;
+  private mutationObserver: MutationObserver;
   private clearCanvas: boolean = true;
   private speed: number = 0;
   private prevFrame: number = 0;
@@ -130,13 +130,13 @@ export class FastImageSequence {
     });
     this.resizeObserver.observe(this.canvas);
 
-    this.mutationOberver = new MutationObserver(() => {
+    this.mutationObserver = new MutationObserver(() => {
       if (!this.container.isConnected) {
         console.error('FastImageSequence: container is not connected to the DOM, fast image sequence will be destroyed');
         this.destruct();
       }
     });
-    this.mutationOberver.observe(container, {childList: true});
+    this.mutationObserver.observe(container, {childList: true});
 
     // init all frames
     this.frames = Array.from({length: this.options.frames}, (_, index) => new Frame(index));
@@ -243,7 +243,7 @@ export class FastImageSequence {
    * @param func - The function to be called.
    */
   public tick(func: (dt: number) => void) {
-    this.tickFuncs.push(func);
+    this.tickFunctions.push(func);
   }
 
   /**
@@ -310,7 +310,7 @@ export class FastImageSequence {
     }
 
     this.resizeObserver.disconnect();
-    this.mutationOberver.disconnect();
+    this.mutationObserver.disconnect();
 
     this.container.removeChild(this.canvas);
     if (this.logElement) {
@@ -428,7 +428,7 @@ export class FastImageSequence {
 
     this.process();
 
-    this.tickFuncs.forEach(func => func(dt));
+    this.tickFunctions.forEach(func => func(dt));
 
     this.prevFrame = this.frame;
     this.animationRequestId = requestAnimationFrame(time => this.drawingLoop(time));
