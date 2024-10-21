@@ -87,6 +87,7 @@ export class FastImageSequence {
   private initialized: boolean = false;
   private posterImage: HTMLImageElement | undefined;
   private timeFrameVisible: number = 0;
+  private time: number = 0;
 
   /**
    * Creates an instance of FastImageSequence.
@@ -120,15 +121,12 @@ export class FastImageSequence {
       display: 'block',
     });
 
-    this.container.appendChild(this.canvas);
-
     this.resizeObserver = new ResizeObserver(() => {
       this.clearCanvas = true;
       if (this.lastFrameDrawn < 0 && this.posterImage) {
         this.drawImage(this.posterImage);
       }
     });
-    this.resizeObserver.observe(this.canvas);
 
     this.mutationObserver = new MutationObserver(() => {
       if (!this.container.isConnected) {
@@ -138,37 +136,10 @@ export class FastImageSequence {
     });
     this.mutationObserver.observe(container, {childList: true});
 
-    // init all frames
-    this.frames = Array.from({length: this.options.frames}, (_, index) => new Frame(index));
     this.log = this.options.showDebugInfo ? console.log : () => {
     };
 
-    // init all input sources
-    const sources = this.options.src instanceof Array ? this.options.src : [this.options.src];
-    this.sources = sources.map((src, index) => {
-      if (src.tarURL !== undefined) {
-        return new ImageSourceTar(this, index, src);
-      } else if (src.imageURL !== undefined) {
-        return new ImageSourceFetch(this, index, src);
-      } else {
-        return new ImageSource(this, index, src);
-      }
-    });
-
-    this.loadResources().then(() => {
-      this.initialized = true;
-
-      this.log('Frames', this.frames);
-      this.log('Options', this.options);
-
-      if (this.options.showDebugInfo) {
-        this.logElement = createLogElement();
-        this.container.appendChild(this.logElement);
-        this.tick(() => this.logDebugStatus(this.logElement as HTMLDivElement));
-      }
-
-      this.drawingLoop(-1);
-    });
+    this.struct();
   }
 
   /**
@@ -262,6 +233,22 @@ export class FastImageSequence {
   }
 
   /**
+   * Add more frames to the image sequence.
+   * @param {number} moreFrames - The number of frames to add.
+   */
+  public addMoreFrames(moreFrames: number) {
+    if (moreFrames < 0) {
+      throw new Error('FastImageSequence: moreFrames must be greater than or equal to 0');
+    }
+
+    if (moreFrames === 0) {
+      return;
+    }
+
+    this.struct(moreFrames);
+  }
+
+  /**
    * Get the image of a specific frame.
    * @param {number} index - The index of the frame.
    * @returns {Promise<HTMLImageElement | ImageBitmap | undefined>} - A promise that resolves with the image of the frame.
@@ -298,8 +285,9 @@ export class FastImageSequence {
 
   /**
    * Destruct the FastImageSequence instance.
+   * @param {boolean} [isAddMoreFrames=false] - Whether the destruct is called to add more frames.
    */
-  public destruct() {
+  public destruct(isAddMoreFrames: boolean = false) {
     if (this.destructed) {
       return;
     }
@@ -313,7 +301,7 @@ export class FastImageSequence {
     this.mutationObserver.disconnect();
 
     this.container.removeChild(this.canvas);
-    if (this.logElement) {
+    if (this.logElement && !isAddMoreFrames) {
       this.container.removeChild(this.logElement);
       this.logElement = undefined;
     }
@@ -333,6 +321,62 @@ export class FastImageSequence {
   public setDisplayOptions(options: Partial<FastImageSequenceDisplayOptions>) {
     this.options = {...this.options, ...options};
     this.clearCanvas = true;
+  }
+
+  /**
+   * Struct the FastImageSequence instance.
+   * If moreFrames is provided, it will add more frames to the sequence. Otherwise, it will initialize the sequence.
+   * @param moreFrames
+   */
+  private struct(moreFrames?: number) {
+    if (moreFrames !== undefined) {
+      this.options.frames += moreFrames;
+      this.destruct();
+    }
+
+    this.container.appendChild(this.canvas);
+    this.resizeObserver.observe(this.canvas);
+    this.mutationObserver.observe(this.container, {childList: true});
+
+    // init all frames
+    this.frames = Array.from({length: this.options.frames}, (_, index) => new Frame(index));
+
+    // init all input sources
+    const sources = this.options.src instanceof Array ? this.options.src : [this.options.src];
+    this.sources = sources.map((src, index) => {
+      if (src.tarURL !== undefined) {
+        return new ImageSourceTar(this, index, src);
+      } else if (src.imageURL !== undefined) {
+        return new ImageSourceFetch(this, index, src);
+      } else {
+        return new ImageSource(this, index, src);
+      }
+    });
+
+    if (moreFrames !== undefined) {
+      this.destructed = false;
+    }
+
+    this.loadResources().then(() => {
+      if (moreFrames === undefined) {
+        this.initialized = true;
+      }
+
+      this.log('Frames', this.frames);
+      this.log('Options', this.options);
+
+      if (this.options.showDebugInfo && moreFrames === undefined) {
+        this.logElement = createLogElement();
+        this.container.appendChild(this.logElement);
+        this.tick(() => this.logDebugStatus(this.logElement as HTMLDivElement));
+      }
+
+      if (moreFrames !== undefined) {
+        this.drawingLoop(this.time);
+      } else {
+        this.drawingLoop(-1);
+      }
+    });
   }
 
   private setLoadingPriority() {
@@ -378,6 +422,8 @@ export class FastImageSequence {
     if (this.destructed) {
       return;
     }
+
+    this.time = time;
 
     time /= 1000;
 
