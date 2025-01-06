@@ -35,4 +35,8 @@ export default class Frame {
   public releaseImage() {
     this.images.forEach(image => image.releaseImage());
   }
+
+  public reset() {
+    this.images.forEach(image => image.reset());
+  }
 }

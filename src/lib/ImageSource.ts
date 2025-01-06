@@ -55,7 +55,11 @@ export default class ImageSource {
     this.index = index;
     this.options = {...ImageSource.defaultOptions, ...options};
 
-    this.context.frames.forEach(frame => frame.images[index] = new ImageElement(this, frame));
+    this.initFrames();
+  }
+
+  public initFrames() {
+    this.context.frames.forEach(frame => frame.images[this.index] ||= new ImageElement(this, frame));
   }
 
   public get type() {
@@ -85,14 +89,17 @@ export default class ImageSource {
     return undefined;
   }
 
-  public async loadResources() {
+  public checkImageAvailability() {
     for (const image of this.images) {
       image.available = this.available(image, image.available);
     }
     if (!this.images[0]?.available) {
       throw new Error(`No image available for index 0 in ImageSource${this.index} (${this.images[0]?.imageURL})`);
     }
+  }
 
+  public async loadResources() {
+    this.checkImageAvailability();
     this.initialized = true;
   }
 

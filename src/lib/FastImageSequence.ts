@@ -146,9 +146,9 @@ export class FastImageSequence {
         this.mutationObserver.observe(container, {childList: true});
 
         this.inViewportObserver = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
+            for (const entry of entries) {
                 this.inViewport = entry.isIntersecting;
-            });
+            }
         });
         this.inViewportObserver.observe(this.canvas);
 
@@ -228,6 +228,36 @@ export class FastImageSequence {
      */
     public get src() {
         return this.sources[0] as ImageSource;
+    }
+
+    /**
+     * Set number of frames in the image sequence.
+     */
+    public set frameCount(value: number) {
+        for (const frame of this.frames) {
+            frame.reset();
+        }
+        this.clearCanvas = true;
+
+        const count = Math.max(1, value | 0);
+        this.options.frames = count;
+
+        if (count < this.frames.length) {
+            this.frames = Array.from({length: count}, (_, index) => new Frame(index));
+        } else if (count > this.frames.length) {
+            this.frames = this.frames.concat(Array.from({length: count - this.frames.length}, (_, index) => new Frame(index + this.frames.length)));
+        }
+        for (const source of this.sources) {
+            source.initFrames();
+            source.checkImageAvailability();
+        }
+    }
+
+    /**
+     * Get number of frames in the image sequence.
+     */
+    public get frameCount(): number {
+        return this.options.frames;
     }
 
     private get index(): number {
@@ -352,12 +382,12 @@ export class FastImageSequence {
 
     private setLoadingPriority() {
         const priorityIndex = this.index;// this.wrapIndex(Math.min(this.spread / 2 - 2, (this.frame - this.prevFrame) * (dt * 60)) + this.frame);
-        this.frames.forEach((image) => {
-            image.priority = Math.abs(image.index + 0.25 - priorityIndex);
+        for (const frame of this.frames) {
+            frame.priority = Math.abs(frame.index + 0.25 - priorityIndex);
             if (this.options.loop) {
-                image.priority = Math.min(image.priority, this.options.frames - image.priority);
+                frame.priority = Math.min(frame.priority, this.options.frames - frame.priority);
             }
-        });
+        }
     }
 
     private async loadResources() {
@@ -405,12 +435,11 @@ export class FastImageSequence {
         this.frame += this.speed * dt;
         this.frame = this.wrapFrame(this.frame);
 
-
         if (this.inViewport) {
             const index = this.index;
             // find the best matching loaded frame, based on current index and direction
             // first set some sort of priority
-            this.frames.forEach((frame) => {
+            for (const frame of this.frames) {
                 frame.priority = Math.abs(frame.index - index);
                 let direction = Math.sign(this.frame - this.prevFrame);
                 if (this.options.loop) {
@@ -421,7 +450,7 @@ export class FastImageSequence {
                     }
                 }
                 frame.priority += this.direction * direction === -1 ? this.frames.length : 0;
-            });
+            }
             this.frames.sort((a, b) => b.priority - a.priority);
 
             // best loaded image
@@ -447,7 +476,7 @@ export class FastImageSequence {
 
     private drawFrame(frame: Frame) {
         const image = frame.image;
-        if (!image) {
+        if (!image || frame.index >= this.options.frames) {
             return;
         }
 
@@ -473,8 +502,8 @@ export class FastImageSequence {
             const canvasWidth = (containerAspect > imageAspect ? this.height * containerAspect : this.width) | 0;
             const canvasHeight = (containerAspect > imageAspect ? this.height : this.width / containerAspect) | 0;
 
-            if (this.canvas.width < canvasWidth || this.canvas.height < this.height || this.canvas.width/this.canvas.height !== canvasWidth/canvasHeight) {
-            // if (this.canvas.width !== canvasWidth || this.canvas.height !== canvasHeight) {
+            if (this.canvas.width < canvasWidth || this.canvas.height < this.height || this.canvas.width / this.canvas.height !== canvasWidth / canvasHeight) {
+                // if (this.canvas.width !== canvasWidth || this.canvas.height !== canvasHeight) {
                 this.canvas.width = canvasWidth;
                 this.canvas.height = canvasHeight;
             }
@@ -483,8 +512,8 @@ export class FastImageSequence {
             const canvasWidth = (containerAspect > imageAspect ? this.width : this.height * containerAspect) | 0;
             const canvasHeight = (containerAspect > imageAspect ? this.width / containerAspect : this.height) | 0;
 
-            if (this.canvas.width < canvasWidth || this.canvas.height < this.height || this.canvas.width/this.canvas.height !== canvasWidth/canvasHeight) {
-            // if (this.canvas.width !== canvasWidth || this.canvas.height !== canvasHeight) {
+            if (this.canvas.width < canvasWidth || this.canvas.height < this.height || this.canvas.width / this.canvas.height !== canvasWidth / canvasHeight) {
+                // if (this.canvas.width !== canvasWidth || this.canvas.height !== canvasHeight) {
                 this.canvas.width = canvasWidth;
                 this.canvas.height = canvasHeight;
             }

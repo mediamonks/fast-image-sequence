@@ -28,7 +28,7 @@ export default class ImageSourceFetch extends ImageSource {
           }).catch(e => reject(e));
         }
       } else {
-        reject('Image url not set or image allready loading');
+        reject('Image url not set or image already loading');
       }
     });
   }
