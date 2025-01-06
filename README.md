@@ -1,7 +1,7 @@
 # Fast Image Sequence Renderer
 
 The fast-image-sequence is a powerful package that allows you to display a sequence of images at a high frame rate on
-your website. It can be used to create smooth animations, 360 product views or video-like sequences from a series of
+your website. It can be used to create smooth animations, 360-degree product views or video-like sequences from a series of
 images.
 Zero dependencies.
 
