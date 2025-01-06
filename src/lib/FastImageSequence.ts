@@ -502,8 +502,7 @@ export class FastImageSequence {
             const canvasWidth = (containerAspect > imageAspect ? this.height * containerAspect : this.width) | 0;
             const canvasHeight = (containerAspect > imageAspect ? this.height : this.width / containerAspect) | 0;
 
-            if (this.canvas.width < canvasWidth || this.canvas.height < this.height || this.canvas.width / this.canvas.height !== canvasWidth / canvasHeight) {
-                // if (this.canvas.width !== canvasWidth || this.canvas.height !== canvasHeight) {
+            if (this.canvas.width !== canvasWidth || this.canvas.height !== canvasHeight) {
                 this.canvas.width = canvasWidth;
                 this.canvas.height = canvasHeight;
             }
@@ -512,8 +511,7 @@ export class FastImageSequence {
             const canvasWidth = (containerAspect > imageAspect ? this.width : this.height * containerAspect) | 0;
             const canvasHeight = (containerAspect > imageAspect ? this.width / containerAspect : this.height) | 0;
 
-            if (this.canvas.width < canvasWidth || this.canvas.height < this.height || this.canvas.width / this.canvas.height !== canvasWidth / canvasHeight) {
-                // if (this.canvas.width !== canvasWidth || this.canvas.height !== canvasHeight) {
+            if (this.canvas.width !== canvasWidth || this.canvas.height !== canvasHeight) {
                 this.canvas.width = canvasWidth;
                 this.canvas.height = canvasHeight;
             }
