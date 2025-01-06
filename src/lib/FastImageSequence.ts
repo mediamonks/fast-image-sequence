@@ -77,6 +77,7 @@ export class FastImageSequence {
   private container: HTMLElement;
   private resizeObserver: ResizeObserver;
   private mutationObserver: MutationObserver;
+  private inViewportObserver: IntersectionObserver;
   private clearCanvas: boolean = true;
   private speed: number = 0;
   private prevFrame: number = 0;
@@ -87,6 +88,7 @@ export class FastImageSequence {
   private initialized: boolean = false;
   private posterImage: HTMLImageElement | undefined;
   private timeFrameVisible: number = 0;
+  private inViewport: boolean = false;
 
   /**
    * Creates an instance of FastImageSequence.
@@ -137,6 +139,13 @@ export class FastImageSequence {
       }
     });
     this.mutationObserver.observe(container, {childList: true});
+
+    this.inViewportObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        this.inViewport = entry.isIntersecting;
+      });
+    });
+    this.inViewportObserver.observe(this.canvas);
 
     // init all frames
     this.frames = Array.from({length: this.options.frames}, (_, index) => new Frame(index));
@@ -311,6 +320,7 @@ export class FastImageSequence {
 
     this.resizeObserver.disconnect();
     this.mutationObserver.disconnect();
+    this.inViewportObserver.disconnect();
 
     this.container.removeChild(this.canvas);
     if (this.logElement) {
@@ -390,13 +400,9 @@ export class FastImageSequence {
     this.frame += this.speed * dt;
     this.frame = this.wrapFrame(this.frame);
 
-    const index = this.index;
 
-    // check if canvas is in viewport
-    const rect = this.canvas.getBoundingClientRect();
-    const inViewport = rect.top < window.innerHeight && rect.bottom > 0;
-
-    if (inViewport) {
+    if (this.inViewport) {
+      const index = this.index;
       // find the best matching loaded frame, based on current index and direction
       // first set some sort of priority
       this.frames.forEach((frame) => {

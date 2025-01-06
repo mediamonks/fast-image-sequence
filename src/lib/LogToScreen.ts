@@ -17,5 +17,5 @@ export function createLogElement() {
 }
 
 export function logToScreen(logElement: HTMLElement, log: string) {
-  logElement.innerText = `${log}`;
+  logElement.textContent = `${log}`;
 }
