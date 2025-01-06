@@ -55,13 +55,16 @@ export default class ImageSource {
     this.index = index;
     this.options = {...ImageSource.defaultOptions, ...options};
 
-    this.options.maxCachedImages = clamp(Math.floor(this.options.maxCachedImages), 1, this.context.options.frames);
-
     this.context.frames.forEach(frame => frame.images[index] = new ImageElement(this, frame));
   }
 
   public get type() {
     return INPUT_CODE;
+  }
+
+  public get maxCachedImages() {
+    const max = this.initialized ? this.images.filter(a => a.available).length : this.context.options.frames;
+    return clamp(Math.floor(this.options.maxCachedImages), 1, max);
   }
 
   protected get images(): ImageElement[] {
@@ -74,8 +77,7 @@ export default class ImageSource {
    * @param onProgress - A callback function that is called with the progress of the loading.
    */
   public setMaxCachedImages(maxCache: number, onProgress?: (progress: number) => void): Promise<boolean> {
-    const max = this.initialized ? this.images.filter(a => a.available).length : this.context.options.frames;
-    this.options.maxCachedImages = clamp(maxCache, 1, max);
+    this.options.maxCachedImages = maxCache;
     return this.context.onLoadProgress(onProgress);
   }
 
@@ -92,7 +94,6 @@ export default class ImageSource {
     }
 
     this.initialized = true;
-    this.setMaxCachedImages(this.options.maxCachedImages);
   }
 
   public process(setLoadingPriority: () => void) {
@@ -106,7 +107,7 @@ export default class ImageSource {
 
     while (numLoading < maxConnectionLimit && imagesToLoad.length > 0) {
       const image = imagesToLoad.shift() as ImageElement;
-      if (image.frame.priority < maxLoadedPriority || numLoaded < this.options.maxCachedImages - numLoading) {
+      if (image.frame.priority < maxLoadedPriority || numLoaded < this.maxCachedImages - numLoading) {
         image.loading = true;
         this.fetchImage(image).then((imageElement) => {
           if (image.loading) {
@@ -127,7 +128,7 @@ export default class ImageSource {
   public getLoadStatus() {
     const numLoading = this.images.filter(a => a.loading).length;
     const numLoaded = this.images.filter(a => a.image !== undefined).length;
-    const maxLoaded = this.options.maxCachedImages;
+    const maxLoaded = this.maxCachedImages;
     const progress = Math.max(0, numLoaded - numLoading) / Math.max(1, maxLoaded);
     return {progress, numLoading, numLoaded, maxLoaded};
   }
@@ -152,7 +153,7 @@ export default class ImageSource {
 
   private releaseImageWithLowestPriority() {
     const loadedImages = this.images.filter(a => a.image !== undefined && !a.loading);
-    if (loadedImages.length > this.options.maxCachedImages) {
+    if (loadedImages.length > this.maxCachedImages) {
       const sortedFrame = loadedImages.sort((a, b) => a.frame.priority - b.frame.priority).pop();
       if (sortedFrame) {
         sortedFrame.releaseImage();

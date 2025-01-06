@@ -441,7 +441,7 @@ export class FastImageSequence {
     }
 
     this.lastFrameDrawn = frame.index;
-    this.canvas.setAttribute('data-frame', frame.index.toString());
+    // this.canvas.setAttribute('data-frame', frame.index.toString());
     this.drawImage(image);
   }
 
@@ -459,8 +459,8 @@ export class FastImageSequence {
 
     if (this.options.objectFit === 'contain') {
       // contain
-      const canvasWidth = containerAspect > imageAspect ? this.height * containerAspect : this.width;
-      const canvasHeight = containerAspect > imageAspect ? this.height : this.width / containerAspect;
+      const canvasWidth = (containerAspect > imageAspect ? this.height * containerAspect : this.width) | 0;
+      const canvasHeight = (containerAspect > imageAspect ? this.height : this.width / containerAspect) | 0;
 
       if (this.canvas.width !== canvasWidth || this.canvas.height !== this.height) {
         this.canvas.width = canvasWidth;
@@ -468,14 +468,13 @@ export class FastImageSequence {
       }
     } else {
       // cover
-      const canvasWidth = containerAspect > imageAspect ? this.width : this.height * containerAspect;
-      const canvasHeight = containerAspect > imageAspect ? this.width / containerAspect : this.height;
+      const canvasWidth = (containerAspect > imageAspect ? this.width : this.height * containerAspect) | 0;
+      const canvasHeight = (containerAspect > imageAspect ? this.width / containerAspect : this.height) | 0;
 
       if (this.canvas.width !== canvasWidth || this.canvas.height !== this.height) {
         this.canvas.width = canvasWidth;
         this.canvas.height = canvasHeight;
       }
-
     }
 
     const dx = (this.canvas.width - this.width) * this.options.horizontalAlign;

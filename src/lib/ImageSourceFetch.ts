@@ -22,9 +22,9 @@ export default class ImageSourceFetch extends ImageSource {
             releaseImageFetchWorker(worker);
           }).catch(e => reject(e));
         } else {
-          const imgElement = new Image();
-          loadImage(imgElement, imageElement.imageURL).then(() => {
-            resolve(imgElement);
+          const img = new Image();
+          loadImage(img, imageElement.imageURL).then(() => {
+            resolve(img);
           }).catch(e => reject(e));
         }
       } else {
