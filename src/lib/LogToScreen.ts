@@ -11,7 +11,7 @@ export function createLogElement() {
     zIndex:          '1000',
     lineHeight:      '20px',
     margin:          0,
-    maxWidth:        'calc(100% - 16px)',
+    width:           '100%',
   });
   return logElement;
 }
