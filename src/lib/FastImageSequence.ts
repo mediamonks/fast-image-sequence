@@ -88,7 +88,10 @@ export class FastImageSequence {
   private initialized: boolean = false;
   private posterImage: HTMLImageElement | undefined;
   private timeFrameVisible: number = 0;
+
   private inViewport: boolean = false;
+  private containerWidth: number = 0;
+  private containerHeight: number = 0;
 
   /**
    * Creates an instance of FastImageSequence.
@@ -126,6 +129,8 @@ export class FastImageSequence {
 
     this.resizeObserver = new ResizeObserver(() => {
       this.clearCanvas = true;
+      this.containerWidth = container.offsetWidth;
+      this.containerHeight = container.offsetHeight;
       if (this.lastFrameDrawn < 0 && this.posterImage) {
         this.drawImage(this.posterImage);
       }
@@ -457,7 +462,7 @@ export class FastImageSequence {
     // @ts-ignore
     const imageHeight = image.naturalHeight || image.height || image.videoHeight;
 
-    const containerAspect = this.container.offsetWidth / this.container.offsetHeight;
+    const containerAspect = this.containerWidth / this.containerHeight;
     const imageAspect = imageWidth / imageHeight;
 
     this.width = Math.max(this.width, imageWidth);
