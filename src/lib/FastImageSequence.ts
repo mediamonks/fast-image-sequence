@@ -45,6 +45,7 @@ export type FastImageSequenceOptions = {
     clearCanvas: boolean,
     showDebugInfo: boolean,
     name: string,
+    scale: number,
 }> & Partial<FastImageSequenceDisplayOptions>;
 
 export class FastImageSequence {
@@ -60,6 +61,7 @@ export class FastImageSequence {
         name: 'FastImageSequence',
         horizontalAlign: 0.5,
         verticalAlign: 0.5,
+        scale: 1,
     };
     public canvas: HTMLCanvasElement;
     public options: Required<FastImageSequenceOptions>;
@@ -78,7 +80,7 @@ export class FastImageSequence {
     private resizeObserver: ResizeObserver;
     private mutationObserver: MutationObserver;
     private inViewportObserver: IntersectionObserver;
-    private clearCanvas: boolean = true;
+    private forceRedraw: boolean = true;
     private speed: number = 0;
     private prevFrame: number = 0;
     private direction: number = 1;
@@ -88,6 +90,7 @@ export class FastImageSequence {
     private initialized: boolean = false;
     private posterImage: HTMLImageElement | undefined;
     private timeFrameVisible: number = 0;
+    private lastImageDrawn: CanvasImageSource | undefined;
 
     private inViewport: boolean = false;
     private containerWidth: number = 0;
@@ -128,7 +131,7 @@ export class FastImageSequence {
         this.container.appendChild(this.canvas);
 
         this.resizeObserver = new ResizeObserver(() => {
-            this.clearCanvas = true;
+            this.forceRedraw = true;
             this.containerWidth = container.offsetWidth;
             this.containerHeight = container.offsetHeight;
             if (this.lastFrameDrawn < 0 && this.posterImage) {
@@ -223,6 +226,55 @@ export class FastImageSequence {
     }
 
     /**
+     * Set the scale of the image sequence. Default is 1.
+     * @param value
+     */
+    public set scale(value: number) {
+        this.forceRedraw = this.options.scale !== value;
+        this.options.scale = value;
+    }
+
+    /**
+     * Get the scale of the image sequence.
+     * @returns {number} - The scale of the image sequence.
+     */
+    public get scale(): number {
+        return this.options.scale;
+    }
+
+    /**
+     * Set the horizontal alignment of the image sequence. Default is 0.5.
+     * @param value
+     */
+    public set horizontalAlign(value: number) {
+        this.forceRedraw = this.options.scale !== value;
+        this.options.horizontalAlign = value;
+    }
+
+    /**
+     * Get the horizontal alignment of the image sequence.
+     */
+    public get horizontalAlign(): number {
+        return this.options.horizontalAlign;
+    }
+
+    /**
+     * Set the vertical alignment of the image sequence. Default is 0.5.
+     * @param value
+     */
+    public set verticalAlign(value: number) {
+        this.forceRedraw = this.options.scale !== value;
+        this.options.verticalAlign = value;
+    }
+
+    /**
+     * Get the vertical alignment of the image sequence.
+     */
+    public get verticalAlign(): number {
+        return this.options.verticalAlign;
+    }
+
+    /**
      * Get the first ImageSource from the sources array.
      * @returns {ImageSource} - The first ImageSource object in the sources array.
      */
@@ -237,7 +289,7 @@ export class FastImageSequence {
         for (const frame of this.frames) {
             frame.reset();
         }
-        this.clearCanvas = true;
+        this.forceRedraw = true;
 
         const count = Math.max(1, value | 0);
         this.options.frames = count;
@@ -321,7 +373,7 @@ export class FastImageSequence {
      */
     public async onLoadProgress(onProgress?: (progress: number) => void): Promise<boolean> {
         let loadProgress = this.loadProgress;
-        return new Promise((resolve) => {
+        return new Promise(resolve => {
             const checkProgress = () => {
                 if (this.loadProgress >= 1) {
                     if (onProgress) {
@@ -377,7 +429,7 @@ export class FastImageSequence {
      */
     public setDisplayOptions(options: Partial<FastImageSequenceDisplayOptions>) {
         this.options = {...this.options, ...options};
-        this.clearCanvas = true;
+        this.forceRedraw = true;
     }
 
     private setLoadingPriority() {
@@ -517,14 +569,19 @@ export class FastImageSequence {
             }
         }
 
-        const dx = (this.canvas.width - this.width) * this.options.horizontalAlign;
-        const dy = (this.canvas.height - this.height) * this.options.verticalAlign;
+        const scale = this.options.scale;
+        const dx = (this.canvas.width - this.width * scale) * this.options.horizontalAlign;
+        const dy = (this.canvas.height - this.height * scale) * this.options.verticalAlign;
 
-        if (this.clearCanvas || this.options.clearCanvas) {
+        if (this.forceRedraw || this.options.clearCanvas) {
             this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
-            this.clearCanvas = false;
         }
-        this.context.drawImage(image, 0, 0, imageWidth, imageHeight, dx, dy, this.width, this.height);
+        if (this.forceRedraw || this.options.clearCanvas || this.lastImageDrawn !== image) {
+            this.context.drawImage(image, 0, 0, imageWidth, imageHeight, dx, dy, this.width * scale, this.height * scale);
+            this.lastImageDrawn = image;
+        }
+
+        this.forceRedraw = false;
     }
 
     private process() {

@@ -124,6 +124,7 @@ will automatically fall back to the best matching available image when rendering
 - **poster**: `string | undefined` - URL of the poster image. Optional.
 - **fillStyle**: `string` - Fill style of the canvas. Default: `'#00000000'`
 - **clearCanvas**: `boolean` - Clear the canvas before drawing. Default: `false`
+- **scale**: `number` - Scale of the image. Default: `1`
 - **showDebugInfo**: `boolean` - Show debug info. Default: `false`
 - **name**: `string` - Name of the FastImageSequence instance. Default: `'FastImageSequence'`
 
@@ -204,6 +205,22 @@ sequence.progress = value;
 ```
 
 - `value` is a number that sets the current progress of the image sequence.
+
+### scale
+
+This getter-and-setter method retrieves or sets the scale of the image sequence. Default: 1.
+
+```typescript
+sequence.scale = 2; // zoom in
+```
+
+### frameCount
+
+This getter-and-setter method retrieves or sets the number of frames in the image sequence. You can use it to, for example, increase the number of frames in the sequence dynamically.
+
+```typescript
+sequence.frameCount = sequence.frameCount + 100;
+```
 
 ### loadProgress
 
