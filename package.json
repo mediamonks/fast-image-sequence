@@ -29,10 +29,16 @@
       "types": "./index.d.ts",
       "import": "./dist/fast-image-sequence.js",
       "require": "./dist/fast-image-sequence.umd.cjs"
+    },
+    "./react": {
+      "types": "./react.d.ts",
+      "import": "./dist/fast-image-sequence-react.js",
+      "require": "./dist/fast-image-sequence-react.umd.cjs"
     }
   },
   "files": [
     "dist/**/*",
+    "react.d.ts",
     "README.md"
   ],
   "publishConfig": {
@@ -47,13 +53,23 @@
     "prepare-publish": "tsx ./scripts/preparePublish.ts"
   },
   "devDependencies": {
+    "@types/react": "^18.3.12",
     "@types/shelljs": "^0.8.14",
+    "react": "^18.3.1",
     "shelljs": "^0.10.0",
     "shx": "^0.4.0",
     "tsx": "^4.6.2",
     "typescript": "^5.0.4",
     "vite": "^7.0.0",
     "vite-plugin-dts": "^4.0.3"
+  },
+  "peerDependencies": {
+    "react": "^16.8.0 || ^17.0.0 || ^18.0.0"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    }
   },
   "engines": {
     "node": ">=16.0.0"

@@ -121,7 +121,6 @@ export class FastImageSequence {
         this.context.fillStyle = this.options.fillStyle;
         this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
         Object.assign(this.canvas.style, {
-            inset: '0',
             width: '100%',
             height: '100%',
             margin: '0',

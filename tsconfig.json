@@ -6,6 +6,7 @@
       "ESNext",
       "DOM"
     ],
+    "jsx": "react-jsx",
     "strict": true,
     "noUncheckedIndexedAccess": true,
     "exactOptionalPropertyTypes": true,
@@ -18,7 +19,8 @@
     "incremental": false,
     "outDir": "./dist",
     "declaration": true,
-    "allowJs": true
+    "allowJs": true,
+    "skipLibCheck": true
   },
   "include": [
     "./src/**/*"

@@ -48,6 +48,85 @@ sequence.play();
 In the options object, you must set the numbers of `frames` and an `imageURL`. The `imageURL` is a function that
 takes an index as a parameter and returns a string representing the URL of the image at that index in the sequence.
 
+## React Usage
+
+The package includes optional React components and hooks. React is tree-shakeable and only included when you import from `@mediamonks/fast-image-sequence/react`.
+
+### Using the React Component
+
+```tsx
+import { useRef } from 'react';
+import { FastImageSequenceComponent } from '@mediamonks/fast-image-sequence/react';
+
+function App() {
+  const sequenceRef = useRef(null);
+
+  const handlePlay = () => {
+    sequenceRef.current?.sequence?.play(30);
+  };
+
+  return (
+    <>
+      <FastImageSequenceComponent
+        ref={sequenceRef}
+        frames={100}
+        src={{
+          imageURL: (index) => `/images/frame-${index}.jpg`,
+        }}
+        loop
+        style={{ width: '100%', height: '100vh' }}
+      />
+      <button onClick={handlePlay}>Play</button>
+    </>
+  );
+}
+```
+
+### Using the React Hook
+
+For more control, you can use the `useFastImageSequence` hook:
+
+```tsx
+import { useEffect } from 'react';
+import { useFastImageSequence } from '@mediamonks/fast-image-sequence/react';
+
+function App() {
+  const { ref, sequence, isReady } = useFastImageSequence({
+    frames: 100,
+    src: {
+      imageURL: (index) => `/images/frame-${index}.jpg`,
+    },
+    loop: true,
+  });
+
+  useEffect(() => {
+    if (sequence && isReady) {
+      sequence.play(30);
+    }
+  }, [sequence, isReady]);
+
+  return <div ref={ref} style={{ width: '100%', height: '100vh' }} />;
+}
+```
+
+### React Component Props
+
+The `FastImageSequenceComponent` accepts all `FastImageSequenceOptions` plus:
+
+- **className**: `string` - CSS class name for the container
+- **style**: `React.CSSProperties` - Inline styles for the container
+- **onReady**: `(sequence: FastImageSequence) => void` - Callback when sequence is ready
+- **onLoadProgress**: `(progress: number) => void` - Callback for load progress updates
+
+### React Hook Return Value
+
+The `useFastImageSequence` hook returns:
+
+- **ref**: `React.RefObject<HTMLDivElement>` - Ref to attach to your container element
+- **sequence**: `FastImageSequence | null` - The FastImageSequence instance
+- **isReady**: `boolean` - Whether the sequence is initialized and ready
+- **loadProgress**: `number` - Current load progress (0-1)
+
 ### Loading images from a tar file
 
 If you want, you can load images from a tar file. This can be useful when you want to preload all images at once with

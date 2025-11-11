@@ -5,16 +5,31 @@ import dts from "vite-plugin-dts";
 export default defineConfig({
     target: 'esnext',
     plugins: [
-        dts()
+        dts({
+            include: ['src/**/*'],
+            exclude: ['**/*.spec.ts', '**/*.test.ts'],
+        })
     ],
     build: {
         assetsInlineLimit: 409600,
         target: 'esnext',
         lib: {
             assetsInlineLimit: 409600,
-            name: "fast-image-sequence",
-            entry: resolve(__dirname, 'src/index.ts'),
-            declaration: true,
-        }
+            entry: {
+                'fast-image-sequence': resolve(__dirname, 'src/index.ts'),
+                'fast-image-sequence-react': resolve(__dirname, 'src/react/index.ts'),
+            },
+            name: "FastImageSequence",
+            formats: ['es', 'umd'],
+        },
+        rollupOptions: {
+            external: ['react', 'react-dom'],
+            output: {
+                globals: {
+                    react: 'React',
+                    'react-dom': 'ReactDOM',
+                },
+            },
+        },
     }
 })
