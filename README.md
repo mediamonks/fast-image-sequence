@@ -48,6 +48,26 @@ sequence.play();
 In the options object, you must set the numbers of `frames` and an `imageURL`. The `imageURL` is a function that
 takes an index as a parameter and returns a string representing the URL of the image at that index in the sequence.
 
+### Loading images from a tar file
+
+If you want, you can load images from a tar file. This can be useful when you want to preload all images at once with
+minimal memory usage. You can use a tar file by setting the `tarURL` option. You also need to set the `imageURL`, which
+in this case returns the image's URL in the tar file.
+
+```ts
+const options = {
+  frames: 100,
+  src:    {
+    tarURL:   'path/to/your/tar/file.tar',
+    imageURL: (index) => `image${index}.jpg`,
+  },
+
+  loop:      true,
+  objectFit: 'cover',
+};
+```
+
+
 ## React Usage
 
 The package includes optional React components and hooks. React is tree-shakeable and only included when you import from `@mediamonks/fast-image-sequence/react`.
@@ -127,26 +147,7 @@ The `useFastImageSequence` hook returns:
 - **isReady**: `boolean` - Whether the sequence is initialized and ready
 - **loadProgress**: `number` - Current load progress (0-1)
 
-### Loading images from a tar file
-
-If you want, you can load images from a tar file. This can be useful when you want to preload all images at once with
-minimal memory usage. You can use a tar file by setting the `tarURL` option. You also need to set the `imageURL`, which
-in this case returns the image's URL in the tar file.
-
-```ts
-const options = {
-  frames: 100,
-  src:    {
-    tarURL:   'path/to/your/tar/file.tar',
-    imageURL: (index) => `image${index}.jpg`,
-  },
-
-  loop:      true,
-  objectFit: 'cover',
-};
-```
-
-### Advanced usage
+## Advanced usage
 
 You can also set multiple sources for the FastImageSequence class. This can be useful when you want to load images from
 different sources, such as a tar file *and* an image URL. You can set an array of ImageSource in the src option.
