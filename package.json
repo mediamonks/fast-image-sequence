@@ -15,7 +15,8 @@
     "renderer",
     "360-degree product views",
     "360",
-    "product"
+    "product",
+    "react"
   ],
   "repository": "git@github.com:mediamonks/fast-image-sequence.git",
   "author": "Reinder Nijhoff <reinder@mediamonks.com>",
