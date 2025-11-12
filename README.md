@@ -67,7 +67,87 @@ const options = {
 };
 ```
 
-### Advanced usage
+
+## React Usage
+
+The package includes optional React components and hooks. React is tree-shakeable and only included when you import from `@mediamonks/fast-image-sequence/react`.
+
+### Using the React Component
+
+```tsx
+import { useRef } from 'react';
+import { FastImageSequenceComponent } from '@mediamonks/fast-image-sequence/react';
+
+function App() {
+  const sequenceRef = useRef(null);
+
+  const handlePlay = () => {
+    sequenceRef.current?.sequence?.play(30);
+  };
+
+  return (
+    <>
+      <FastImageSequenceComponent
+        ref={sequenceRef}
+        frames={100}
+        src={{
+          imageURL: (index) => `/images/frame-${index}.jpg`,
+        }}
+        loop
+        style={{ width: '100%', height: '100vh' }}
+      />
+      <button onClick={handlePlay}>Play</button>
+    </>
+  );
+}
+```
+
+### Using the React Hook
+
+For more control, you can use the `useFastImageSequence` hook:
+
+```tsx
+import { useEffect } from 'react';
+import { useFastImageSequence } from '@mediamonks/fast-image-sequence/react';
+
+function App() {
+  const { ref, sequence, isReady } = useFastImageSequence({
+    frames: 100,
+    src: {
+      imageURL: (index) => `/images/frame-${index}.jpg`,
+    },
+    loop: true,
+  });
+
+  useEffect(() => {
+    if (sequence && isReady) {
+      sequence.play(30);
+    }
+  }, [sequence, isReady]);
+
+  return <div ref={ref} style={{ width: '100%', height: '100vh' }} />;
+}
+```
+
+### React Component Props
+
+The `FastImageSequenceComponent` accepts all `FastImageSequenceOptions` plus:
+
+- **className**: `string` - CSS class name for the container
+- **style**: `React.CSSProperties` - Inline styles for the container
+- **onReady**: `(sequence: FastImageSequence) => void` - Callback when sequence is ready
+- **onLoadProgress**: `(progress: number) => void` - Callback for load progress updates
+
+### React Hook Return Value
+
+The `useFastImageSequence` hook returns:
+
+- **ref**: `React.RefObject<HTMLDivElement>` - Ref to attach to your container element
+- **sequence**: `FastImageSequence | null` - The FastImageSequence instance
+- **isReady**: `boolean` - Whether the sequence is initialized and ready
+- **loadProgress**: `number` - Current load progress (0-1)
+
+## Advanced usage
 
 You can also set multiple sources for the FastImageSequence class. This can be useful when you want to load images from
 different sources, such as a tar file *and* an image URL. You can set an array of ImageSource in the src option.
@@ -135,6 +215,7 @@ will automatically fall back to the best matching available image when rendering
 - **useWorker**: `boolean` - Use a worker to fetch images. Default: `!isMobile()`
 - **maxConnectionLimit**: `number` - Maximum concurrent connections for fetching images. Default: `4`
 - **maxCachedImages**: `number` - Number of images to cache. Default: `32`
+- **hierarchicalCacheFraction**: `number` - Fraction of cache (0-1) allocated to hierarchical preloading for smooth scrubbing. Remaining fraction is used for sequential frames around current position. Default: `0.3`
 - **available**: `((index: number) => boolean) | undefined` - Callback returning whether an image is available.
   Optional.
 - **image**: `((index: number) => Promise<CanvasImageSource>) | undefined` - Callback returning the image given its

@@ -121,7 +121,6 @@ export class FastImageSequence {
         this.context.fillStyle = this.options.fillStyle;
         this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
         Object.assign(this.canvas.style, {
-            inset: '0',
             width: '100%',
             height: '100%',
             margin: '0',
@@ -157,6 +156,7 @@ export class FastImageSequence {
 
         // init all frames
         this.frames = Array.from({length: this.options.frames}, (_, index) => new Frame(index));
+        this.setTreePriority();
         this.log = this.options.showDebugInfo ? console.log : () => {
         };
 
@@ -303,6 +303,8 @@ export class FastImageSequence {
             source.initFrames();
             source.checkImageAvailability();
         }
+
+        this.setTreePriority();
     }
 
     /**
@@ -432,13 +434,37 @@ export class FastImageSequence {
         this.forceRedraw = true;
     }
 
-    private setLoadingPriority() {
+    private setTreePriority() {
+        for (const frame of this.frames) {
+            frame.treePriority = 1 - frame.index / (this.frameCount * 2);
+        }
+        let normalizationScale = 0;
+        for (let step = 1; step <= this.frames.length; step = step * 2 + 1, normalizationScale++) {
+            for (const frame of this.frames) {
+                if ((frame.index & step) === 0) frame.treePriority += 1;
+            }
+        }
+        for (const frame of this.frames) {
+            // remap frame.priority to 0 - 1, 0 is most important
+            frame.treePriority = frame.index === this.frameCount - 1 ? 0 : Math.max(0, 1 - frame.treePriority / normalizationScale);
+        }
+    }
+
+    private setLoadingPriority(maxCachedTreePriorityImages: number = 0) {
         const priorityIndex = this.index;// this.wrapIndex(Math.min(this.spread / 2 - 2, (this.frame - this.prevFrame) * (dt * 60)) + this.frame);
+        const normalizationScale = (this.options.loop ? 2 : 1) / Math.max(1, this.frames.length);
         for (const frame of this.frames) {
             frame.priority = Math.abs(frame.index + 0.25 - priorityIndex);
             if (this.options.loop) {
                 frame.priority = Math.min(frame.priority, this.options.frames - frame.priority);
             }
+            // remap frame.priority to 0 - 1, 0 is most important
+            frame.priority *= normalizationScale;
+            // add 1, so treePriority always have priority :)
+            frame.priority += 1;
+        }
+        if (maxCachedTreePriorityImages > 0) {
+            this.frames.sort((a, b) => a.treePriority - b.treePriority).slice(0, maxCachedTreePriorityImages).forEach(f => f.priority = f.treePriority);
         }
     }
 
@@ -587,7 +613,7 @@ export class FastImageSequence {
     private process() {
         for (const source of this.sources) {
             if (this.timeFrameVisible >= source.options.timeout / 1000) {
-                source.process(() => this.setLoadingPriority());
+                source.process((maxCachedTreePriorityImages: number = 0) => this.setLoadingPriority(maxCachedTreePriorityImages));
             }
         }
     }

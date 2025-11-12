@@ -20,14 +20,14 @@ jobs:
 
       - name: Install npm packages
         run: npm ci
-        working-directory: ./example
+        working-directory: ./examples/vanilla
 
       - name: Build
         run: npm run build
-        working-directory: ./example
+        working-directory: ./examples/vanilla
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./example/dist
+          publish_dir: ./examples/vanilla/dist

@@ -4,6 +4,7 @@ export default class Frame {
     public index: number;
     public images: ImageElement[] = [];
     public priority: number = 0;
+    public treePriority: number = 0;
 
     constructor(index: number) {
         this.index = index;
