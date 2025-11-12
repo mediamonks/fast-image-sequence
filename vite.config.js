@@ -20,7 +20,7 @@ export default defineConfig({
                 'fast-image-sequence-react': resolve(__dirname, 'src/react/index.ts'),
             },
             name: "FastImageSequence",
-            formats: ['es', 'umd'],
+            formats: ['es'],
         },
         rollupOptions: {
             external: ['react', 'react-dom'],

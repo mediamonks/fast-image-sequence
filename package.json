@@ -21,19 +21,17 @@
   "author": "Reinder Nijhoff <reinder@mediamonks.com>",
   "license": "MIT",
   "type": "module",
-  "main": "./dist/fast-image-sequence.umd.cjs",
+  "main": "./dist/fast-image-sequence.js",
   "module": "./dist/fast-image-sequence.js",
   "types": "./index.d.ts",
   "exports": {
     ".": {
       "types": "./index.d.ts",
-      "import": "./dist/fast-image-sequence.js",
-      "require": "./dist/fast-image-sequence.umd.cjs"
+      "import": "./dist/fast-image-sequence.js"
     },
     "./react": {
       "types": "./react.d.ts",
-      "import": "./dist/fast-image-sequence-react.js",
-      "require": "./dist/fast-image-sequence-react.umd.cjs"
+      "import": "./dist/fast-image-sequence-react.js"
     }
   },
   "files": [
