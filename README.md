@@ -215,6 +215,7 @@ will automatically fall back to the best matching available image when rendering
 - **useWorker**: `boolean` - Use a worker to fetch images. Default: `!isMobile()`
 - **maxConnectionLimit**: `number` - Maximum concurrent connections for fetching images. Default: `4`
 - **maxCachedImages**: `number` - Number of images to cache. Default: `32`
+- **hierarchicalCacheFraction**: `number` - Fraction of cache (0-1) allocated to hierarchical preloading for smooth scrubbing. Remaining fraction is used for sequential frames around current position. Default: `0.3`
 - **available**: `((index: number) => boolean) | undefined` - Callback returning whether an image is available.
   Optional.
 - **image**: `((index: number) => Promise<CanvasImageSource>) | undefined` - Callback returning the image given its
