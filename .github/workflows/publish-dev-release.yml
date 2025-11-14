@@ -2,7 +2,7 @@ name: Publish dev release
 
 on:
   push:
-    branches: [main]
+    branches: [ main ]
 
 jobs:
   bump-version:

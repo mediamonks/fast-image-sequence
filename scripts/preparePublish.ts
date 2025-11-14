@@ -1,4 +1,4 @@
-import { join } from 'node:path';
+import {join} from 'node:path';
 import shell from 'shelljs';
 
 /**
@@ -11,7 +11,8 @@ import shell from 'shelljs';
  * using auto-import or auto-complete.
  */
 // eslint-disable-next-line @typescript-eslint/naming-convention,no-underscore-dangle
-import { fileURLToPath } from 'url'
+import {fileURLToPath} from 'url'
+
 const __dirname = fileURLToPath(new URL('.', import.meta.url))
 const projectFolder = join(__dirname, '..');
 
@@ -23,7 +24,7 @@ const distFolder = join(projectFolder, 'dist');
 const filesToPublish = ['package.json', 'README.md'];
 
 for (const file of filesToPublish) {
-  shell.cp('-R', join(projectFolder, file), join(distFolder, file));
+    shell.cp('-R', join(projectFolder, file), join(distFolder, file));
 }
 
 // remove the 'dist' folder from all fields in the package.json

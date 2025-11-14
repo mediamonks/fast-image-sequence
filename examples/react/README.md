@@ -17,12 +17,14 @@ npm run dev
 ## Features
 
 ### Component Example
+
 - Uses `FastImageSequenceComponent` wrapper
 - Play/pause control
 - Auto-initialization
 - Event callbacks for ready state and load progress
 
 ### Hook Example
+
 - Uses `useFastImageSequence` hook for more control
 - Manual progress control with slider
 - Real-time progress tracking
