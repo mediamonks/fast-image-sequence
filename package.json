@@ -31,13 +31,12 @@
       "import": "./dist/fast-image-sequence.js"
     },
     "./react": {
-      "types": "./react.d.ts",
+      "types": "./dist/react/index.d.ts",
       "import": "./dist/fast-image-sequence-react.js"
     }
   },
   "files": [
     "dist/**/*",
-    "react.d.ts",
     "README.md"
   ],
   "publishConfig": {

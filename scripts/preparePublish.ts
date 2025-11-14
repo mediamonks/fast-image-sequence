@@ -20,7 +20,7 @@ const distFolder = join(projectFolder, 'dist');
 
 // include all paths (files or folders) that should be copied over to the dist folder on publish
 // this should likely be in sync with the 'files' field in the package.json
-const filesToPublish = ['package.json', 'README.md', 'LICENSE'];
+const filesToPublish = ['package.json', 'README.md'];
 
 for (const file of filesToPublish) {
   shell.cp('-R', join(projectFolder, file), join(distFolder, file));
