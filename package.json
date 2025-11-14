@@ -1,7 +1,7 @@
 {
   "name": "@mediamonks/fast-image-sequence",
   "version": "2.0.1",
-  "description": "The fast-image-sequence-renderer is a powerful package that allows you to display a sequence of images at a high frame rate on your website. Zero dependencies.",
+  "description": "The fast-image-sequence-renderer is a powerful package for displaying image sequences at high frame rates on websites. Use it to create smooth animations, 360° product views, or video-like sequences from series of images. Zero dependencies.",
   "keywords": [
     "image sequence",
     "flip book",
