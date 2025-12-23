@@ -52,7 +52,7 @@
   },
   "devDependencies": {
     "@types/react": "^19.2.5",
-    "@types/shelljs": "^0.8.14",
+    "@types/shelljs": "^0.10.0",
     "react": "^19.2.0",
     "shelljs": "^0.10.0",
     "shx": "^0.4.0",
