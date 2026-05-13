@@ -22,7 +22,7 @@ export default defineConfig({
             name: "FastImageSequence",
             formats: ['es'],
         },
-        rollupOptions: {
+        rolldownOptions: {
             external: ['react', 'react-dom'],
             output: {
                 globals: {

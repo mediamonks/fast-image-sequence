@@ -34,3 +34,5 @@ yarn-error.log*
 /dist
 /example/dist
 /example/node_modules
+/examples/react/dist
+/examples/vanilla/dist
