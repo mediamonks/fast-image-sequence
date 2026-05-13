@@ -119,6 +119,7 @@ export class FastImageSequence {
         this.canvas = document.createElement('canvas');
         this.context = <CanvasRenderingContext2D>this.canvas.getContext('2d');
         this.context.fillStyle = this.options.fillStyle;
+        this.context.imageSmoothingQuality = 'high';
         this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
         Object.assign(this.canvas.style, {
             width: '100%',
@@ -569,41 +570,55 @@ export class FastImageSequence {
         // @ts-ignore
         const imageHeight = image.naturalHeight || image.height || image.videoHeight;
 
-        const containerAspect = this.containerWidth / this.containerHeight;
-        const imageAspect = imageWidth / imageHeight;
-
         this.width = Math.max(this.width, imageWidth);
         this.height = Math.max(this.height, imageHeight);
 
-        if (this.options.objectFit === 'contain') {
-            // contain
-            const canvasWidth = (containerAspect > imageAspect ? this.height * containerAspect : this.width) | 0;
-            const canvasHeight = (containerAspect > imageAspect ? this.height : this.width / containerAspect) | 0;
+        // Re-evaluated every frame so window zoom and DPR changes (moving between monitors)
+        // are picked up without an extra matchMedia listener.
+        const dpr = window.devicePixelRatio || 1;
+        const canvasWidth = Math.max(1, Math.round(this.containerWidth * dpr));
+        const canvasHeight = Math.max(1, Math.round(this.containerHeight * dpr));
+        if (this.canvas.width !== canvasWidth || this.canvas.height !== canvasHeight) {
+            this.canvas.width = canvasWidth;
+            this.canvas.height = canvasHeight;
+            this.context.imageSmoothingQuality = 'high';
+            this.forceRedraw = true;
+        }
 
-            if (this.canvas.width !== canvasWidth || this.canvas.height !== canvasHeight) {
-                this.canvas.width = canvasWidth;
-                this.canvas.height = canvasHeight;
+        const canvasAspect = canvasWidth / canvasHeight;
+        const imageAspect = this.width / this.height;
+        const scale = this.options.scale;
+
+        let fitWidth: number;
+        let fitHeight: number;
+        if (this.options.objectFit === 'contain') {
+            if (canvasAspect > imageAspect) {
+                fitHeight = canvasHeight;
+                fitWidth = canvasHeight * imageAspect;
+            } else {
+                fitWidth = canvasWidth;
+                fitHeight = canvasWidth / imageAspect;
             }
         } else {
-            // cover
-            const canvasWidth = (containerAspect > imageAspect ? this.width : this.height * containerAspect) | 0;
-            const canvasHeight = (containerAspect > imageAspect ? this.width / containerAspect : this.height) | 0;
-
-            if (this.canvas.width !== canvasWidth || this.canvas.height !== canvasHeight) {
-                this.canvas.width = canvasWidth;
-                this.canvas.height = canvasHeight;
+            if (canvasAspect > imageAspect) {
+                fitWidth = canvasWidth;
+                fitHeight = canvasWidth / imageAspect;
+            } else {
+                fitHeight = canvasHeight;
+                fitWidth = canvasHeight * imageAspect;
             }
         }
+        fitWidth *= scale;
+        fitHeight *= scale;
 
-        const scale = this.options.scale;
-        const dx = (this.canvas.width - this.width * scale) * this.options.horizontalAlign;
-        const dy = (this.canvas.height - this.height * scale) * this.options.verticalAlign;
+        const dx = (canvasWidth - fitWidth) * this.options.horizontalAlign;
+        const dy = (canvasHeight - fitHeight) * this.options.verticalAlign;
 
         if (this.forceRedraw || this.options.clearCanvas) {
-            this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
+            this.context.clearRect(0, 0, canvasWidth, canvasHeight);
         }
         if (this.forceRedraw || this.options.clearCanvas || this.lastImageDrawn !== image) {
-            this.context.drawImage(image, 0, 0, imageWidth, imageHeight, dx, dy, this.width * scale, this.height * scale);
+            this.context.drawImage(image, 0, 0, imageWidth, imageHeight, dx, dy, fitWidth, fitHeight);
             this.lastImageDrawn = image;
         }
 
