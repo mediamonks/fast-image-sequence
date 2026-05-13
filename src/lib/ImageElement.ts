@@ -1,6 +1,12 @@
 import ImageSource from "./ImageSource.js";
 import type Frame from "./Frame.js";
 
+export function closeCanvasImage(image: CanvasImageSource): void {
+    if (image instanceof ImageBitmap || (typeof VideoFrame !== 'undefined' && image instanceof VideoFrame)) {
+        image.close();
+    }
+}
+
 export default class ImageElement {
     public available: boolean = true;
     public loading: boolean = false;
@@ -44,9 +50,7 @@ export default class ImageElement {
 
     public releaseImage() {
         if (this._image) {
-            if (this._image instanceof ImageBitmap) {
-                this._image.close();
-            }
+            closeCanvasImage(this._image);
             this._image = undefined;
         }
         this.loading = false;

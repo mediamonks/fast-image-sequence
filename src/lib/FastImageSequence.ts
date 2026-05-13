@@ -1,8 +1,17 @@
 import Frame from "./Frame.js";
 import {createLogElement, logToScreen} from "./LogToScreen.js";
-import ImageSource, {type ImageSourceOptions, INPUT_CODE, INPUT_SRC} from "./ImageSource.js";
+import ImageSource, {type ImageSourceOptions, INPUT_CODE, INPUT_SRC, INPUT_TAR, INPUT_VIDEO} from "./ImageSource.js";
 import ImageSourceTar from "./ImageSourceTar.js";
 import ImageSourceFetch from "./ImageSourceFetch.js";
+import ImageSourceVideo from "./ImageSourceVideo.js";
+import {closeCanvasImage} from "./ImageElement.js";
+
+const SOURCE_TYPE_LABELS: Record<number, string> = {
+    [INPUT_SRC]: 'image:',
+    [INPUT_TAR]: 'tar:  ',
+    [INPUT_CODE]: 'code: ',
+    [INPUT_VIDEO]: 'video:',
+};
 
 export function isMobile(): boolean {
     return (typeof navigator !== "undefined" && /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent));
@@ -164,7 +173,9 @@ export class FastImageSequence {
         // init all input sources
         const sources = this.options.src instanceof Array ? this.options.src : [this.options.src];
         this.sources = sources.map((src, index) => {
-            if (src.tarURL !== undefined) {
+            if (src.videoURL !== undefined) {
+                return new ImageSourceVideo(this, index, src);
+            } else if (src.tarURL !== undefined) {
                 return new ImageSourceTar(this, index, src);
             } else if (src.imageURL !== undefined) {
                 return new ImageSourceFetch(this, index, src);
@@ -482,7 +493,9 @@ export class FastImageSequence {
             }).catch((e) => this.log(e));
         }
         await Promise.all(this.sources.map(src => src.loadResources()));
-        await this.getFrameImage(0);
+        // Probe-decode frame 0; the returned image is not cached, so close any native handle.
+        const probe = await this.getFrameImage(0);
+        if (probe) closeCanvasImage(probe);
     }
 
     private wrapIndex(frame: number) {
@@ -566,9 +579,9 @@ export class FastImageSequence {
 
     private drawImage(image: CanvasImageSource) {
         // @ts-ignore
-        const imageWidth = image.naturalWidth || image.width || image.videoWidth;
+        const imageWidth = image.naturalWidth || image.width || image.videoWidth || image.displayWidth || image.codedWidth;
         // @ts-ignore
-        const imageHeight = image.naturalHeight || image.height || image.videoHeight;
+        const imageHeight = image.naturalHeight || image.height || image.videoHeight || image.displayHeight || image.codedHeight;
 
         this.width = Math.max(this.width, imageWidth);
         this.height = Math.max(this.height, imageHeight);
@@ -639,7 +652,7 @@ export class FastImageSequence {
 
         for (const source of this.sources) {
             const {progress, numLoading, numLoaded, maxLoaded} = source.getLoadStatus();
-            debugInfo += ` src[${source.index}] ${source.type === INPUT_SRC ? `image:` : source.type === INPUT_CODE ? `code: ` : `tar:  `} ${formatPercentage(progress)}, numLoading: ${numLoading}, numLoaded: ${numLoaded}/${maxLoaded}${source.options.useWorker ? ', use worker' : ''}\n`;
+            debugInfo += ` src[${source.index}] ${SOURCE_TYPE_LABELS[source.type] ?? '?     '} ${formatPercentage(progress)}, numLoading: ${numLoading}, numLoaded: ${numLoaded}/${maxLoaded}${source.options.useWorker ? ', use worker' : ''}\n`;
         }
         logToScreen(output, debugInfo);
     }

@@ -2,12 +2,10 @@
 
 The fast-image-sequence is a powerful package that allows you to display a sequence of images at a high frame rate on
 your website. It can be used to create smooth animations, 360-degree product views or video-like sequences from a series
-of
-images.
-Zero dependencies.
+of images. Zero dependencies.
 
 The FastImageSequence supports various options for customizing the behaviour of the image sequence, such as preloading
-all images, using a worker to handle tar files, and more.
+all images, using a worker to handle tar files, decoding frames from an MP4 video via WebCodecs, and more.
 
 ## Demo
 
@@ -48,6 +46,45 @@ sequence.play();
 
 In the options object, you must set the numbers of `frames` and an `imageURL`. The `imageURL` is a function that
 takes an index as a parameter and returns a string representing the URL of the image at that index in the sequence.
+
+### Loading frames from an MP4 video
+
+You can use an MP4 video as the source. Frames are decoded on demand with
+[WebCodecs](https://w3c.github.io/webcodecs/) `VideoDecoder` running in a worker.
+
+```ts
+const options = {
+  frames: 240,
+  src:    {
+    videoURL: 'path/to/your/sequence.mp4',
+  },
+
+  loop:      true,
+  objectFit: 'cover',
+};
+```
+
+Constraints:
+
+- **H.264 only** (`avc1` / `avc3` codec inside an MP4 container).
+- **WebCodecs required**: Chrome 94+, Safari 16.4+, Firefox 130+. The constructor throws if `VideoDecoder` is unavailable.
+- `frames` must match the number of frames in the video; a mismatch is logged when `showDebugInfo` is enabled.
+
+#### Recommended encoding for fast scrubbing
+
+`VideoDecoder` requires re-decoding from a keyframe whenever the playhead jumps backwards or beyond the current decode window. For a video with one keyframe every N frames, a random-access request needs up to N chunks decoded. Combine a short GOP with a generous `maxCachedImages` to keep most scrubs inside the cache:
+
+```sh
+ffmpeg -i input.mp4 \
+  -c:v libx264 -profile:v main -pix_fmt yuv420p -tune fastdecode \
+  -g 5 -keyint_min 5 -x264opts no-scenecut \
+  -movflags +faststart -an \
+  output.mp4
+```
+
+`-g 5 -keyint_min 5` and `-x264opts no-scenecut` give a keyframe every 5 frames (so each random-access decode walks at most 5 chunks); `-tune fastdecode` picks x264 settings that minimize decode-time work; `-movflags +faststart` puts the `moov` box at the start of the file so parsing can begin before the download completes; `-an` drops the audio track. Pair this with `maxCachedImages` set to ~20% of `frames` for smooth scrubbing.
+
+For applications where every random-access seek must complete in a single chunk (e.g., aggressive scrub with a tiny cache), switch to `-g 1 -keyint_min 1`. Each frame becomes independently decodable, at the cost of a ~2× larger file vs the GOP=5 encoding above.
 
 ### Loading images from a tar file
 
@@ -214,6 +251,7 @@ will automatically fall back to the best matching available image when rendering
 
 - **imageURL**: `(index: number) => string` - Callback returning the URL of an image given its index.
 - **tarURL**: `string | undefined` - URL of the tar file containing images. Optional.
+- **videoURL**: `string | undefined` - URL of an MP4 video file. Frames are decoded with WebCodecs (H.264 only). Optional.
 - **useWorker**: `boolean` - Use a worker to fetch images. Default: `!isMobile()`
 - **maxConnectionLimit**: `number` - Maximum concurrent connections for fetching images. Default: `4`
 - **maxCachedImages**: `number` - Number of images to cache. Default: `32`

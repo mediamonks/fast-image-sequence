@@ -1,11 +1,12 @@
 import {clamp, type FastImageSequence, isMobile} from "./FastImageSequence.js";
-import ImageElement from "./ImageElement.js";
+import ImageElement, {closeCanvasImage} from "./ImageElement.js";
 
 export const INPUT_SRC = 0;
 export const INPUT_TAR = 1;
 export const INPUT_CODE = 2;
+export const INPUT_VIDEO = 3;
 
-export type ImageSourceType = typeof INPUT_SRC | typeof INPUT_TAR | typeof INPUT_CODE;
+export type ImageSourceType = typeof INPUT_SRC | typeof INPUT_TAR | typeof INPUT_CODE | typeof INPUT_VIDEO;
 
 /**
  * @typedef ImageSourceOptions
@@ -14,6 +15,7 @@ export type ImageSourceType = typeof INPUT_SRC | typeof INPUT_TAR | typeof INPUT
  *
  * @property {((index: number) => string) | undefined} imageURL - A callback function that returns the URL of an image given its index.
  * @property {string | undefined} tarURL - The URL of the tar file containing the images for the sequence.
+ * @property {string | undefined} videoURL - The URL of an MP4 video file. Frames are decoded with WebCodecs.
  * @property {boolean} useWorker - Whether to use a worker for fetching images.
  * @property {number} maxCachedImages - The number of images to cache.
  * @property {number} maxConnectionLimit - The maximum number of images to load simultaneously.
@@ -25,6 +27,7 @@ export type ImageSourceType = typeof INPUT_SRC | typeof INPUT_TAR | typeof INPUT
 export type ImageSourceOptions = {
     imageURL: ((index: number) => string) | undefined,
     tarURL: string | undefined,
+    videoURL: string | undefined,
     useWorker: boolean;
     maxCachedImages: number,
     maxConnectionLimit: number,
@@ -38,6 +41,7 @@ export default class ImageSource {
     private static defaultOptions: Required<ImageSourceOptions> = {
         tarURL: undefined,
         imageURL: undefined,
+        videoURL: undefined,
         useWorker: !isMobile(),
         maxCachedImages: 32,
         maxConnectionLimit: 4,
@@ -127,6 +131,8 @@ export default class ImageSource {
                     if (image.loading) {
                         image.image = imageElement;
                         image.loading = false;
+                    } else {
+                        closeCanvasImage(imageElement);
                     }
                 }).catch((e) => {
                     image.reset();

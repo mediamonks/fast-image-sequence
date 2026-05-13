@@ -52,9 +52,10 @@ function ComponentExample() {
 
 function HookExample() {
     const {ref, sequence, isReady, loadProgress} = useFastImageSequence({
-        frames: 120,
+        frames: 300,
         src: {
-            imageURL: (index) => `${('' + (index + 1)).padStart(3, '0')}.jpg`,
+            videoURL: 'bigbuckbunny-gop5.mp4',
+            maxCachedImages: 64,
         },
         loop: true,
     });
@@ -77,7 +78,7 @@ function HookExample() {
 
     return (
         <div style={{marginTop: '40px'}}>
-            <h2>Hook Example (Manual Control)</h2>
+            <h2>Hook Example (Video source via WebCodecs)</h2>
             <div ref={ref} style={{width: '100%', height: '400px', borderRadius: '16px', overflow: 'hidden'}}/>
             <div style={{marginTop: '10px'}}>
                 <input
