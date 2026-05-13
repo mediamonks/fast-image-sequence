@@ -6,7 +6,7 @@ export interface UseFastImageSequenceOptions extends FastImageSequenceOptions {
 }
 
 export interface UseFastImageSequenceReturn {
-    ref: React.RefObject<HTMLDivElement>;
+    ref: React.RefObject<HTMLDivElement | null>;
     sequence: FastImageSequence | null;
     isReady: boolean;
     loadProgress: number;
