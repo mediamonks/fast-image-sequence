@@ -37,7 +37,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '24'
           registry-url: 'https://registry.npmjs.org'
           cache: 'npm'
 
@@ -72,15 +72,11 @@ jobs:
         if: github.event_name == 'workflow_dispatch'
         run: npm publish
         working-directory: ./dist
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Publish to NPM (Dev)
         if: github.event_name == 'push'
         run: npm publish --tag next
         working-directory: ./dist
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Push latest version
         if: github.event_name == 'workflow_dispatch'
