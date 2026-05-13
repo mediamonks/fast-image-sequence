@@ -5,7 +5,6 @@ import type ImageElement from "./ImageElement.js";
 
 export default class ImageSourceTar extends ImageSource {
     public tarball: Tarball | undefined;
-    private tarLoadProgress: number = 0;
 
     public override get type() {
         return INPUT_TAR;
@@ -13,13 +12,10 @@ export default class ImageSourceTar extends ImageSource {
 
     public override async loadResources() {
         if (this.options.tarURL !== undefined) {
-            const data = await downloadFile(this.options.tarURL, (progress) => {
-                this.tarLoadProgress = progress;
-            });
+            const data = await downloadFile(this.options.tarURL, (p) => this.downloadProgress = p);
             this.tarball = new Tarball(data, {useWorker: this.options.useWorker});
             this.context.log('Tarball', this.tarball);
         }
-
         return super.loadResources();
     }
 
@@ -27,24 +23,11 @@ export default class ImageSourceTar extends ImageSource {
         return this.options.imageURL ? this.options.imageURL(index) : undefined;
     }
 
-    public override getLoadStatus() {
-        const status = super.getLoadStatus();
-        status.progress = this.tarLoadProgress / 2 + status.progress / 2;
-        return status;
-    }
-
-    public override async fetchImage(imageElement: ImageElement) {
-        return new Promise<CanvasImageSource>((resolve, reject) => {
-            if (imageElement.available) {
-                this.tarball?.getImage(imageElement.imageURL || '', imageElement.frame.index).then((image: HTMLImageElement | ImageBitmap) => {
-                    resolve(image);
-                }).catch(e => {
-                    reject(e);
-                });
-            } else {
-                reject(`Image not available or already loading ${imageElement.imageURL} ${imageElement.loading}`);
-            }
-        });
+    public override async fetchImage(imageElement: ImageElement): Promise<CanvasImageSource> {
+        if (!imageElement.available) {
+            throw new Error(`Tarball image not available: ${imageElement.imageURL}`);
+        }
+        return await this.tarball!.getImage(imageElement.imageURL || '', imageElement.frame.index);
     }
 
     public override destruct() {

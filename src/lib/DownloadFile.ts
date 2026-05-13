@@ -34,11 +34,11 @@ export function loadImage(img: HTMLImageElement, src: string): Promise<HTMLImage
         img.onerror = (e) => reject(e);
         img.decoding = "async";
         img.src = src;
-        img.decode().then(() => {
-            resolve(img);
-        }).catch(e => {
-            console.error(e);
-            reject(e);
-        });
+        img.decode().then(() => resolve(img)).catch(reject);
     });
+}
+
+export function createWorkerFromSource(source: string): Worker {
+    const blob = new Blob([source], {type: 'application/javascript'});
+    return new Worker(URL.createObjectURL(blob));
 }

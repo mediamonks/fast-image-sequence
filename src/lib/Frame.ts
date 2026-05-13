@@ -15,18 +15,10 @@ export default class Frame {
     }
 
     public async getImage(): Promise<CanvasImageSource> {
-        return new Promise(async (resolve, reject) => {
-            if (this.image !== undefined) {
-                resolve(this.image);
-            } else {
-                const lastImage = this.images[this.images.length - 1];
-                if (lastImage) {
-                    lastImage.fetchImage().then(img => resolve(img)).catch(() => reject());
-                } else {
-                    reject();
-                }
-            }
-        });
+        if (this.image !== undefined) return this.image;
+        const lastImage = this.images[this.images.length - 1];
+        if (!lastImage) throw new Error('Frame has no image sources');
+        return lastImage.fetchImage();
     }
 
     public async fetchImage(): Promise<CanvasImageSource | undefined> {

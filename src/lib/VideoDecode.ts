@@ -1,4 +1,5 @@
 import videoWorkerSource from './VideoDecode.worker.js?raw';
+import {createWorkerFromSource} from './DownloadFile.js';
 
 export type VideoInfo = {
     frames: number;
@@ -27,8 +28,7 @@ export default class VideoDecode {
             throw new Error('WebCodecs VideoDecoder is not available in this browser');
         }
 
-        const workerBlob = new Blob([videoWorkerSource], {type: 'application/javascript'});
-        this.worker = new Worker(URL.createObjectURL(workerBlob));
+        this.worker = createWorkerFromSource(videoWorkerSource);
 
         this.ready = new Promise<VideoInfo>((resolve, reject) => {
             this.readyResolve = resolve;

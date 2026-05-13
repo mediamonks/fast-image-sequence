@@ -65,7 +65,7 @@ export class FastImageSequence {
         poster: undefined,
         fillStyle: '#00000000',
         objectFit: 'cover',
-        clearCanvas: false, // clear canvas before drawing
+        clearCanvas: false,
         showDebugInfo: false,
         name: 'FastImageSequence',
         horizontalAlign: 0.5,
@@ -164,13 +164,10 @@ export class FastImageSequence {
         });
         this.inViewportObserver.observe(this.canvas);
 
-        // init all frames
         this.frames = Array.from({length: this.options.frames}, (_, index) => new Frame(index));
         this.setTreePriority();
-        this.log = this.options.showDebugInfo ? console.log : () => {
-        };
+        this.log = this.options.showDebugInfo ? console.log : () => {};
 
-        // init all input sources
         const sources = this.options.src instanceof Array ? this.options.src : [this.options.src];
         this.sources = sources.map((src, index) => {
             if (src.videoURL !== undefined) {
@@ -259,7 +256,7 @@ export class FastImageSequence {
      * @param value
      */
     public set horizontalAlign(value: number) {
-        this.forceRedraw = this.options.scale !== value;
+        this.forceRedraw = this.options.horizontalAlign !== value;
         this.options.horizontalAlign = value;
     }
 
@@ -275,7 +272,7 @@ export class FastImageSequence {
      * @param value
      */
     public set verticalAlign(value: number) {
-        this.forceRedraw = this.options.scale !== value;
+        this.forceRedraw = this.options.verticalAlign !== value;
         this.options.verticalAlign = value;
     }
 
@@ -334,7 +331,6 @@ export class FastImageSequence {
      * Returns a promise that resolves when the image sequence is ready to play.
      */
     public ready(): Promise<void> {
-        // check if the sequence is initialized
         return new Promise((resolve) => {
             const checkInitialized = () => {
                 if (this.sources.every(source => source.initialized)) {
@@ -463,17 +459,15 @@ export class FastImageSequence {
     }
 
     private setLoadingPriority(maxCachedTreePriorityImages: number = 0) {
-        const priorityIndex = this.index;// this.wrapIndex(Math.min(this.spread / 2 - 2, (this.frame - this.prevFrame) * (dt * 60)) + this.frame);
+        const priorityIndex = this.index;
         const normalizationScale = (this.options.loop ? 2 : 1) / Math.max(1, this.frames.length);
         for (const frame of this.frames) {
-            frame.priority = Math.abs(frame.index + 0.25 - priorityIndex);
+            let priority = Math.abs(frame.index + 0.25 - priorityIndex);
             if (this.options.loop) {
-                frame.priority = Math.min(frame.priority, this.options.frames - frame.priority);
+                priority = Math.min(priority, this.options.frames - priority);
             }
-            // remap frame.priority to 0 - 1, 0 is most important
-            frame.priority *= normalizationScale;
-            // add 1, so treePriority always have priority :)
-            frame.priority += 1;
+            // Bias above treePriority so it always has higher load priority.
+            frame.priority = priority * normalizationScale + 1;
         }
         if (maxCachedTreePriorityImages > 0) {
             this.frames.sort((a, b) => a.treePriority - b.treePriority).slice(0, maxCachedTreePriorityImages).forEach(f => f.priority = f.treePriority);
@@ -518,7 +512,10 @@ export class FastImageSequence {
 
         time /= 1000;
 
-        const dt = this.initialized ? this.startTime < 0 ? 1 / 60 : Math.min(time - this.startTime, 1 / 30) : 0;
+        let dt = 0;
+        if (this.initialized) {
+            dt = this.startTime < 0 ? 1 / 60 : Math.min(time - this.startTime, 1 / 30);
+        }
         this.startTime = time > 0 ? time : -1;
 
         if (this.frame - this.prevFrame < 0) this.direction = -1;
@@ -529,27 +526,24 @@ export class FastImageSequence {
 
         if (this.inViewport) {
             const index = this.index;
-            // find the best matching loaded frame, based on current index and direction
-            // first set some sort of priority
-            for (const frame of this.frames) {
-                frame.priority = Math.abs(frame.index - index);
-                let direction = Math.sign(this.frame - this.prevFrame);
-                if (this.options.loop) {
-                    const wrappedPriority = this.options.frames - frame.priority;
-                    if (wrappedPriority < frame.priority) {
-                        frame.priority = wrappedPriority;
-                        // direction *= -1;
-                    }
-                }
-                frame.priority += this.direction * direction === -1 ? this.frames.length : 0;
-            }
-            this.frames.sort((a, b) => b.priority - a.priority);
+            const playDirection = Math.sign(this.frame - this.prevFrame);
+            const directionPenalty = (this.direction * playDirection === -1) ? this.frames.length : 0;
 
-            // best loaded image
-            const bestImageMatch = this.frames.filter(a => a.image !== undefined).pop();
-            if (bestImageMatch) {
-                this.drawFrame(bestImageMatch);
+            let bestMatch: Frame | undefined;
+            let bestPriority = Infinity;
+            for (const frame of this.frames) {
+                if (frame.image === undefined) continue;
+                let priority = Math.abs(frame.index - index);
+                if (this.options.loop) {
+                    priority = Math.min(priority, this.options.frames - priority);
+                }
+                priority += directionPenalty;
+                if (priority < bestPriority) {
+                    bestPriority = priority;
+                    bestMatch = frame;
+                }
             }
+            if (bestMatch) this.drawFrame(bestMatch);
         }
 
         if (this.wrapIndex(this.frame) === this.wrapIndex(this.prevFrame)) {
@@ -573,7 +567,6 @@ export class FastImageSequence {
         }
 
         this.lastFrameDrawn = frame.index;
-        // this.canvas.setAttribute('data-frame', frame.index.toString());
         this.drawImage(image);
     }
 

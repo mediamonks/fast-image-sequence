@@ -6,7 +6,6 @@ import type ImageElement from "./ImageElement.js";
 
 export default class ImageSourceVideo extends ImageSource {
     public decoder: VideoDecode | undefined;
-    private videoLoadProgress: number = 0;
 
     constructor(context: FastImageSequence, index: number, options: Partial<ImageSourceOptions>) {
         // WebCodecs decode is sequential and always runs in a worker — force these regardless of caller input.
@@ -19,9 +18,7 @@ export default class ImageSourceVideo extends ImageSource {
 
     public override async loadResources() {
         if (this.options.videoURL !== undefined) {
-            const data = await downloadFile(this.options.videoURL, (progress) => {
-                this.videoLoadProgress = progress;
-            });
+            const data = await downloadFile(this.options.videoURL, (p) => this.downloadProgress = p);
             this.decoder = new VideoDecode(data);
             const info = await this.decoder.ready;
             if (this.context.options.frames !== info.frames) {
@@ -29,12 +26,6 @@ export default class ImageSourceVideo extends ImageSource {
             }
         }
         return super.loadResources();
-    }
-
-    public override getLoadStatus() {
-        const status = super.getLoadStatus();
-        status.progress = this.videoLoadProgress / 2 + status.progress / 2;
-        return status;
     }
 
     public override async fetchImage(imageElement: ImageElement): Promise<CanvasImageSource> {

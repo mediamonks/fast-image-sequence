@@ -52,10 +52,14 @@ export default class ImageSource {
     };
 
     public options: ImageSourceOptions;
-    public index: number = -0;
+    public index: number = 0;
     public initialized: boolean = false;
 
     protected context: FastImageSequence;
+    protected images: ImageElement[] = [];
+
+    // Buffer-based sources (tar, video) set this 0–1 during download; mixed into getLoadStatus.
+    protected downloadProgress: number = 0;
 
     constructor(context: FastImageSequence, index: number, options: Partial<ImageSourceOptions>) {
         this.context = context;
@@ -67,6 +71,7 @@ export default class ImageSource {
 
     public initFrames() {
         this.context.frames.forEach(frame => frame.images[this.index] ||= new ImageElement(this, frame));
+        this.images = this.context.frames.map(frame => frame.images[this.index] as ImageElement);
     }
 
     public get type() {
@@ -76,10 +81,6 @@ export default class ImageSource {
     public get maxCachedImages() {
         const max = this.initialized ? this.images.filter(a => a.available).length : this.context.options.frames;
         return clamp(Math.floor(this.options.maxCachedImages), 1, max);
-    }
-
-    protected get images(): ImageElement[] {
-        return this.context.frames.map(frame => frame.images[this.index] as ImageElement);
     }
 
     /**
@@ -124,7 +125,6 @@ export default class ImageSource {
         while (numLoading < maxConnectionLimit && imagesToLoad.length > 0) {
             const image = imagesToLoad.shift() as ImageElement;
             if ((numLoaded < this.maxCachedImages - numLoading || image.frame.priority < maxLoadedPriority - 0.1) && !image.loading) {
-                // console.log(`Start loading ${image.frame.index}: ${image.frame.priority}`);
                 image.loading = true;
                 numLoading++;
                 this.fetchImage(image).then((imageElement) => {
@@ -143,10 +143,15 @@ export default class ImageSource {
     }
 
     public getLoadStatus() {
-        const numLoading = this.images.filter(a => a.loading).length;
-        const numLoaded = this.images.filter(a => a.image !== undefined).length;
+        let numLoading = 0;
+        let numLoaded = 0;
+        for (const image of this.images) {
+            if (image.loading) numLoading++;
+            if (image.image !== undefined) numLoaded++;
+        }
         const maxLoaded = this.maxCachedImages;
-        const progress = Math.max(0, numLoaded - numLoading) / Math.max(1, maxLoaded);
+        let progress = Math.max(0, numLoaded - numLoading) / Math.max(1, maxLoaded);
+        if (this.downloadProgress < 1) progress = this.downloadProgress / 2 + progress / 2;
         return {progress, numLoading, numLoaded, maxLoaded};
     }
 
@@ -169,14 +174,16 @@ export default class ImageSource {
     }
 
     private releaseImageWithLowestPriority() {
-        const loadedImages = this.images.filter(a => a.image !== undefined && !a.loading);
-        if (loadedImages.length > this.maxCachedImages) {
-            const sortedFrame = loadedImages.sort((a, b) => a.frame.priority - b.frame.priority).pop();
-            if (sortedFrame) {
-                // console.log(`Release ${sortedFrame.frame.index} of ${sortedFrame.frame.priority}`);
-                sortedFrame.releaseImage();
-                return true;
-            }
+        let loadedCount = 0;
+        let worst: ImageElement | undefined;
+        for (const image of this.images) {
+            if (image.image === undefined || image.loading) continue;
+            loadedCount++;
+            if (!worst || image.frame.priority > worst.frame.priority) worst = image;
+        }
+        if (loadedCount > this.maxCachedImages && worst) {
+            worst.releaseImage();
+            return true;
         }
         return false;
     }
