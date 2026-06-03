@@ -6,7 +6,11 @@ export interface UseFastImageSequenceOptions extends FastImageSequenceOptions {
 }
 
 export interface UseFastImageSequenceReturn {
-    ref: React.RefObject<HTMLDivElement | null>;
+    // Portable ref-object shape instead of React.RefObject<HTMLDivElement | null>: React 19
+    // changed RefObject (`current: T`) vs React 16–18 (`readonly current: T | null`), so a
+    // version-specific RefObject annotation fails to assign to a DOM `ref` prop on one major or
+    // the other. This plain shape attaches cleanly as a `ref` across React 16.8–19.
+    ref: {current: HTMLDivElement | null};
     sequence: FastImageSequence | null;
     isReady: boolean;
     loadProgress: number;
