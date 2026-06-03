@@ -1,5 +1,5 @@
 import React, {useEffect, useRef, useState} from 'react';
-import {FastImageSequenceComponent, type FastImageSequenceComponentRef, useFastImageSequence} from '../../../src/react';
+import {FastImageSequenceComponent, type FastImageSequenceComponentRef, useFastImageSequence} from '@mediamonks/fast-image-sequence/react';
 
 function ComponentExample() {
     const sequenceRef = useRef<FastImageSequenceComponentRef>(null);
